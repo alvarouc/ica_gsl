@@ -47,3 +47,17 @@ void print_matrix_corner(gsl_matrix *input){
   }
 
 }
+
+void print_vector_head(gsl_vector *input){
+  int i;
+
+  printf ("\n\nVector size: %zu\n", input->size);
+
+  size_t N = input->size < 10 ? input->size : 10;
+  printf("[ ");
+  for (i = 0; i < N; i++){
+      printf("%g ", gsl_vector_get(input,i));
+  }
+  printf(" ]");
+
+}

@@ -7,6 +7,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_statistics.h>
 
+void print_vector_head(gsl_vector *input);
 gsl_vector *matrix_mean(gsl_matrix *input);
 void fill_matrix_random(gsl_matrix *input);
 void print_matrix_corner(gsl_matrix *input);

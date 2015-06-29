@@ -15,7 +15,7 @@ gsl_matrix *input;
 int init_suite1(void)
 {
   input = gsl_matrix_alloc(NROW, NCOL);
-  CU_ASSERT_PTR_NOT_NULL(input);
+  if (NULL==input) return 1;
   fill_matrix_random(input);
   return 0;
 }
@@ -31,6 +31,9 @@ void test_matrix_mean(void){
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
 
+  
+
+  CU_FAIL("Finish the test!)
 }
 
 void test_pca_whiten(void)  {
@@ -62,7 +65,10 @@ int main()
    }
 
    /* add the tests to the suite */
-   if ((NULL == CU_add_test(pSuite, "test of whitening", test_pca_whiten)) )
+   if (
+(NULL == CU_add_test(pSuite, "test of mean_matrix()", test_matrix_mean)) ||
+(NULL == CU_add_test(pSuite, "test of whitening", test_pca_whiten))
+      )
    {
       CU_cleanup_registry();
       return CU_get_error();
