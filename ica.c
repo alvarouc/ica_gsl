@@ -11,13 +11,6 @@ double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
 double W_STOP = 1e-6;
 
-void pca_whiten(double *x2d,  int n_comp,
-                double *x_white, double *white,
-                double *dewhite, double *u, double *s,
-                double *v, bool verbose);
-void w_update(double *unmixer, double *x_white, double *bias1,
-              double *lrate1, double *error);
-void infomax1(double *x_white, bool verbose);
 
 
 int main(){
