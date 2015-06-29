@@ -16,7 +16,7 @@ int init_suite1(void)
 {
   input = gsl_matrix_alloc(NROW, NCOL);
   if (NULL==input) return 1;
-  fill_matrix_random(input);
+
   return 0;
 }
 
@@ -28,6 +28,7 @@ int clean_suite1(void)
 
 void test_matrix_mean(void){
   // Test the util function matrix_mean
+  fill_matrix_const(input, 0.0)
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
 
@@ -41,7 +42,7 @@ void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
-
+  fill_matrix_random(input);
   print_matrix_corner(input);
   // COV(input)
 
