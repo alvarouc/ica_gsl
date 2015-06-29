@@ -16,6 +16,18 @@ gsl_vector *matrix_mean(gsl_matrix *input){
 
 }
 
+void fill_matrix_const( gsl_matrix *input, float const x){
+  size_t NROW = input->size1;
+  size_t NCOL = input->size2;
+
+  int i,j;
+
+  for (i = 0; i < NROW; i++)
+    for (j = 0; j < NCOL; j++){
+                  gsl_matrix_set(input, i, j, x);
+          }
+}
+
 void fill_matrix_random(gsl_matrix *input){
 // Fill a GSL matrix with random numbers
   size_t NROW = input->size1;
@@ -58,6 +70,6 @@ void print_vector_head(gsl_vector *input){
   for (i = 0; i < N; i++){
       printf("%g ", gsl_vector_get(input,i));
   }
-  printf(" ]");
+  printf(" ... ]");
 
 }

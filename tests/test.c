@@ -31,7 +31,8 @@ void test_matrix_mean(void){
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
 
-
+  printf("\n Result of matrix_mean()");
+  print_vector_head(mean);
 
   CU_FAIL("Finish the test!");
 }
