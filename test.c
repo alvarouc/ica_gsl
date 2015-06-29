@@ -5,39 +5,33 @@
 #include "ica.h"
 
 // unit testing for ICA
+int init_suite1(void)
+{
+   return 0
+}
+int clean_suite1(void)
+{
+   return 0
+}
 
 void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
-  // Input matrix
-  size_t nrow = 100, ncol = 1000;
-  gsl_matrix *input = gsl_matrix_alloc(nrow, ncol);
+  int i,j;
 
+  // Input matrix
+  size_t NROW = 100, NCOL = 1000;
+  gsl_matrix *input = gsl_matrix_alloc(NROW, NCOL);
   CU_ASSERT_PTR_NOT_NULL(input)
+
+
+
+
+  CU_PASS()
 }
 
 
-void test_mmul()
-{
-  // dimensions of input matrix
-  size_t m = 10000;
-  size_t n = 10000;
-  // number of components to extract
-  int n_comp = 10;
-  //allocating space for input
-  gsl_matrix *input, *output;
-
-  input = gsl_matrix_alloc(m,n);
-  printf("Allocated matrix of %d by %d\n\n",m,n);
-  //input initialization
-  printf (" Intializing matrix data \n\n");
-
-  for (i = 0; i < m; i++)
-          for (j = 0; j < n; j++)
-          {
-                  gsl_matrix_set(input, i, j, (double)(rand()));
-          }
 
   //output allocation
   output = gsl_matrix_alloc(m,n);
@@ -51,12 +45,31 @@ void test_mmul()
 
 
 // functional testing for ICA
+int main()
+{
+   CU_pSuite pSuite = NULL;
 
-int main(int argc, char const *argv[]) {
+   /* initialize the CUnit test registry */
+   if (CUE_SUCCESS != CU_initialize_registry())
+      return CU_get_error();
 
-  printf("Unit Testing\n\n")
+   /* add a suite to the registry */
+   pSuite = CU_add_suite("Suite_1", init_suite1, clean_suite1);
+   if (NULL == pSuite) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
 
-  printf("")
-  /* code */
-  return 0;
+   /* add the tests to the suite */
+   if ((NULL == CU_add_test(pSuite, "test of whitening", testFPRINTF)) )
+   {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+   /* Run all tests using the CUnit Basic interface */
+   CU_basic_set_mode(CU_BRM_VERBOSE);
+   CU_basic_run_tests();
+   CU_cleanup_registry();
+   return CU_get_error();
 }
