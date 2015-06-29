@@ -3,6 +3,7 @@
 #include <gsl/gsl_blas.h>
 #include <CUnit/CUnit.h>
 #include "ica.h"
+#include "utils.h"
 
 // unit testing for ICA
 int init_suite1(void)
@@ -24,9 +25,6 @@ void test_pca_whiten(void)  {
   size_t NROW = 100, NCOL = 1000;
   gsl_matrix *input = gsl_matrix_alloc(NROW, NCOL);
   CU_ASSERT_PTR_NOT_NULL(input)
-
-
-
 
   CU_PASS()
 }
