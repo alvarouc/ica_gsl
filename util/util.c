@@ -1,5 +1,18 @@
 #include "util.h"
 
+void matrix_demean(gsl_matrix *input){
+
+  gsl_vector *mean = matrix_mean(input);
+
+  size_t NCOL = input->size2;
+  size_t i;
+  for (i = 0; i < NCOL; i++) {
+    gsl_vector_view column = gsl_matrix_column(input, i);
+    gsl_vector_add_constant( &column.vector,
+                             -gsl_vector_get(mean, i));
+  }
+}
+
 gsl_vector *matrix_mean(gsl_matrix *input){
   //  Function to extract the column mean of a gsl matrix
   size_t col;

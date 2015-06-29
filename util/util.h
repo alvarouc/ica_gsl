@@ -8,6 +8,7 @@
 #include <gsl/gsl_statistics.h>
 
 gsl_vector *matrix_mean(gsl_matrix *input);
+void matrix_demean(gsl_matrix *input);
 void fill_matrix_random(gsl_matrix *input);
 void fill_matrix_const( gsl_matrix *input, float const x);
 void fill_vector_const(gsl_vector *input, float const x);

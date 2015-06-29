@@ -42,6 +42,20 @@ void test_matrix_mean(void){
   print_vector_head(mean);
 }
 
+void test_matrix_demean(void){
+  // Test the util function matrix_demean
+  fill_matrix_const(input, 1.0);
+
+  matrix_demean(input);
+  gsl_vector *mean = matrix_mean(input);
+
+  // Compare mean to the expected mean
+  gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
+  fill_vector_const(expected_mean, 0.0);
+
+  CU_ASSERT(gsl_vector_equal(mean, expected_mean));
+}
+
 void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
@@ -72,7 +86,8 @@ int main()
 
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite, "test of mean_matrix()", test_matrix_mean)) ||
+(NULL == CU_add_test(pSuite, "test of matrix_mean()", test_matrix_mean)) ||
+(NULL == CU_add_test(pSuite, "test of matrix_demean()", test_matrix_demean)) ||
 (NULL == CU_add_test(pSuite, "test of whitening", test_pca_whiten))
       )
    {
