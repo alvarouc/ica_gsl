@@ -10,10 +10,3 @@ double MAX_W = 1e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
 double W_STOP = 1e-6;
-
-
-
-int main(){
-        return 0;
-
-}

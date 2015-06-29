@@ -7,7 +7,7 @@
 #include "../util/util.h"
 
 // Input matrix
-size_t NROW = 100, NCOL = 1000;
+size_t NROW = 1000, NCOL = 10000;
 gsl_matrix *input;
 // check if memory was allocated
 
@@ -29,7 +29,7 @@ int clean_suite1(void)
 void test_matrix_mean(void){
   // Test the util function matrix_mean
   fill_matrix_const(input, 1.0);
-  print_matrix_corner(input);
+  // print_matrix_corner(input);
 
   // Compute column mean
   gsl_vector *mean = matrix_mean(input);
@@ -39,7 +39,7 @@ void test_matrix_mean(void){
   fill_vector_const(expected_mean, 1.0);
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
 
-  print_vector_head(mean);
+  // print_vector_head(mean);
 }
 
 void test_matrix_demean(void){
@@ -78,17 +78,30 @@ int main()
       return CU_get_error();
 
    /* add a suite to the registry */
-   pSuite = CU_add_suite("Suite_1", init_suite1, clean_suite1);
-   if (NULL == pSuite) {
+   pSuite_util = CU_add_suite("Suite_util", init_suite1, clean_suite1);
+   if (NULL == pSuite_util) {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
+   pSuite_ica = CU_add_suite("Suite_ICA", init_suite1, clean_suite1);
+   if (NULL == pSuite_ica) {
+      CU_cleanup_registry();
+      return CU_get_error();
+   }
+
+
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite, "test of matrix_mean()", test_matrix_mean)) ||
-(NULL == CU_add_test(pSuite, "test of matrix_demean()", test_matrix_demean)) ||
-(NULL == CU_add_test(pSuite, "test of whitening", test_pca_whiten))
+(NULL == CU_add_test(pSuite_util,
+  "test of matrix_mean()",
+  test_matrix_mean)) ||
+(NULL == CU_add_test(pSuite_util, 
+  "test of matrix_demean()",
+  test_matrix_demean)) ||
+(NULL == CU_add_test(pSuite_ica,
+  "test of whitening",
+  test_pca_whiten))
       )
    {
       CU_cleanup_registry();
