@@ -106,6 +106,6 @@ gsl_matrix *matrix_cov(gsl_matrix *input){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-  gsl_matrix_scale(cov, 1.0/input->size1);
+  gsl_matrix_scale(cov, 1.0/(input->size1-1));
   return cov;
 }

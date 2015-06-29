@@ -5,6 +5,7 @@
 #include <CUnit/Basic.h>
 // #include "ica.h"
 #include "../util/util.h"
+#include <gsl/gsl_eigen.h>
 
 // Input matrix
 size_t NROW = 1000, NCOL = 10000;
@@ -62,8 +63,41 @@ void test_matrix_cov(void){
 
   gsl_matrix *cov = matrix_cov(input);
   CU_ASSERT_PTR_NOT_NULL(cov);
-  print_matrix_corner(cov);
-  CU_ASSERT(gsl_matrix_isnonneg(cov));
+  // print_matrix_corner(cov);
+  size_t i,j;
+  size_t n_diferent = 0;
+  for (i = 0; i < cov->size1; i++) {
+    for (j = 0; j < cov->size2; j++) {
+      if (gsl_matrix_get(cov,0,1)!=gsl_matrix_get(cov,1,0))
+        n_diferent ++;
+    }
+  }
+  CU_ASSERT_EQUAL(n_diferent, 0 );
+
+}
+
+void test_eigen_decomp(void){
+  fill_matrix_random(input);
+  // printf("Raw Input Matrix\n");
+  // print_matrix_corner(input);
+
+  matrix_demean(input);
+
+  // printf("demeaned Matrix\n");
+  // print_matrix_corner(input);
+  gsl_matrix *cov = matrix_cov(input);
+  // Set up eigen decomposition
+  gsl_vector *eval = gsl_vector_alloc(cov->size1); //eigen values
+  gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
+  CU_ASSERT_PTR_NOT_NULL(w);
+  gsl_eigen_symmv(cov, eval, evec, w);
+  gsl_eigen_symmv_free(w);
+
+  CU_ASSERT_PTR_NOT_NULL(eval);
+  CU_ASSERT_PTR_NOT_NULL(evec);
+
+  CU_FAIL("FInish the eigen test");
 }
 
 void test_pca_whiten(void)  {
@@ -74,6 +108,8 @@ void test_pca_whiten(void)  {
   print_matrix_corner(input);
 
   matrix_demean(input);
+  // gsl_matrix *white, *dewhite, *x_white;
+  // pca_whiten(input, 10, x_white, white, dewhite, 0);
 
 
   // Clean up
@@ -116,8 +152,8 @@ int main()
   "test of matrix_cov()",
   test_matrix_cov)) ||
 (NULL == CU_add_test(pSuite_ica,
-  "test of whitening",
-  test_pca_whiten))
+  "test eigen decomposition",
+  test_eigen_decomp))
       )
    {
       CU_cleanup_registry();
