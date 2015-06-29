@@ -22,7 +22,7 @@ int init_suite1(void)
 
 int clean_suite1(void)
 {
-  gsl_matrix_free(input)
+  gsl_matrix_free(input);
   return 0;
 }
 
@@ -30,7 +30,6 @@ void test_matrix_mean(void){
   // Test the util function matrix_mean
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
-  
 
 }
 

@@ -1,6 +1,7 @@
 #include "util.h"
 
 gsl_vector *matrix_mean(gsl_matrix *input){
+  //  Function to extract the column mean of a gsl matrix
   size_t col;
   size_t NCOL = input->size2;
   gsl_vector_view a_col;
