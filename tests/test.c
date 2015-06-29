@@ -28,14 +28,18 @@ int clean_suite1(void)
 
 void test_matrix_mean(void){
   // Test the util function matrix_mean
-  fill_matrix_const(input, 0.0)
+  fill_matrix_const(input, 1.0);
+  print_matrix_corner(input);
+
+  // Compute column mean
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
+  // Compare to the expected mean
+  gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
+  fill_vector_const(expected_mean, 1.0);
+  CU_ASSERT(gsl_vector_equal(mean, expected_mean));
 
-  printf("\n Result of matrix_mean()");
   print_vector_head(mean);
-
-  CU_FAIL("Finish the test!");
 }
 
 void test_pca_whiten(void)  {
