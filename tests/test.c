@@ -71,7 +71,8 @@ void test_pca_whiten(void)  {
 // functional testing for ICA
 int main()
 {
-   CU_pSuite pSuite = NULL;
+  CU_pSuite pSuite_util = NULL;
+  CU_pSuite pSuite_ica = NULL;
 
    /* initialize the CUnit test registry */
    if (CUE_SUCCESS != CU_initialize_registry())
@@ -96,7 +97,7 @@ int main()
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_mean()",
   test_matrix_mean)) ||
-(NULL == CU_add_test(pSuite_util, 
+(NULL == CU_add_test(pSuite_util,
   "test of matrix_demean()",
   test_matrix_demean)) ||
 (NULL == CU_add_test(pSuite_ica,
