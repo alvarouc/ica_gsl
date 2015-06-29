@@ -56,13 +56,25 @@ void test_matrix_demean(void){
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
 }
 
+void test_matrix_cov(void){
+  fill_matrix_random(input);
+  matrix_demean(input);
+
+  gsl_matrix *cov = matrix_cov(input);
+  CU_ASSERT_PTR_NOT_NULL(cov);
+  print_matrix_corner(cov);
+  CU_ASSERT(gsl_matrix_isnonneg(cov));
+}
+
 void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
   fill_matrix_random(input);
   print_matrix_corner(input);
-  // COV(input)
+
+  matrix_demean(input);
+
 
   // Clean up
   CU_FAIL("Complete the test!");
@@ -100,6 +112,9 @@ int main()
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_demean()",
   test_matrix_demean)) ||
+(NULL == CU_add_test(pSuite_util,
+  "test of matrix_cov()",
+  test_matrix_cov)) ||
 (NULL == CU_add_test(pSuite_ica,
   "test of whitening",
   test_pca_whiten))

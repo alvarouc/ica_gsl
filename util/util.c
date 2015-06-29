@@ -94,3 +94,18 @@ void print_vector_head(gsl_vector *input){
   printf(" ... ]\n\n");
 
 }
+
+gsl_matrix *matrix_cov(gsl_matrix *input){
+  /*Compute matrix covariance
+  The input is a matrix with an observation per row
+  The function assumes the matrix is demeaned
+  Note: This can be optimized to exploid matrix symmetry
+  */
+
+  gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
+
+  gsl_blas_dgemm (CblasNoTrans, CblasTrans,
+    1.0, input, input, 0.0, cov);
+  gsl_matrix_scale(cov, 1.0/input->size1);
+  return cov;
+}
