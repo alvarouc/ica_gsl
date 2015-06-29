@@ -1,9 +1,11 @@
-#include "utils.h"
+#include "util.h"
 
 void fill_matrix_random(gsl_matrix *input){
+// Fill a GSL matrix with random numbers
+  size_t NROW = input->size1;
+  size_t NCOL = input->size2;
 
-  NROW = input->size1;
-  NCOL = input->size2;
+  int i,j;
 
   for (i = 0; i < NROW; i++)
     for (j = 0; j < NCOL; j++){
@@ -16,16 +18,16 @@ void print_matrix_corner(gsl_matrix *input){
 
   int i,j;
 
-  printf ("Matrix size: %dx%d"\n, input->size1, input->size2)
+  printf ("\n\nMatrix size: %zux%zu\n", input->size1, input->size2);
 
-  NROW = input->size1 < 3 ? input->size1 : 3;
-  NCOL = input->size2 < 3 ? input->size2 : 3;
+  size_t NROW = input->size1 < 3 ? input->size1 : 3;
+  size_t NCOL = input->size2 < 3 ? input->size2 : 3;
 
   for (i = 0; i < NROW; i++){
-    for (size_t j = 0;j < NCOL; j++) {
-      printf("%g ", gsl_matrix_get(m,i,j))
+    for (j = 0;j < NCOL; j++) {
+      printf("%g ", gsl_matrix_get(input,i,j));
     }
-    printf("\n")
+    printf("\n");
   }
 
 }
