@@ -31,9 +31,9 @@ void test_matrix_mean(void){
   gsl_vector *mean = matrix_mean(input);
   CU_ASSERT_PTR_NOT_NULL(mean);
 
-  
 
-  CU_FAIL("Finish the test!)
+
+  CU_FAIL("Finish the test!");
 }
 
 void test_pca_whiten(void)  {
