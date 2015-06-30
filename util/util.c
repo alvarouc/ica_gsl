@@ -60,18 +60,6 @@ void fill_vector_const(gsl_vector *input, float const x){
 
 }
 
-void fill_matrix_const( gsl_matrix *input, float const x){
-  size_t NROW = input->size1;
-  size_t NCOL = input->size2;
-
-  int i,j;
-
-  for (i = 0; i < NROW; i++)
-    for (j = 0; j < NCOL; j++){
-      gsl_matrix_set(input, i, j, x);
-    }
-}
-
 void fill_matrix_random(gsl_matrix *input){
 // Fill a GSL matrix with random numbers
   size_t NROW = input->size1;

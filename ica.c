@@ -27,19 +27,19 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   gsl_vector *eval = gsl_vector_alloc(cov->size1); //eigen values
   gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
 
-
+  /*
   //Compute eigen values with LAPACK
-  int info = 0;
-  info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
+  LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
     cov->size1, cov->data, cov->size1, eval->data);
   gsl_matrix_memcpy(evec,cov);
-  /*
+  */
+
   //Compute eigen values with GSL
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
   gsl_eigen_symmv(cov, eval, evec, w);
   gsl_matrix_free(cov);
   gsl_eigen_symmv_free(w);
-  */
+
   // sort eigen values
   gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
   // reduce number of components

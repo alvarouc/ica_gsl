@@ -1,3 +1,6 @@
+# Profiler files
+*.stats
+
 # Object files
 *.o
 *.ko

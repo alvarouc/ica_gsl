@@ -1,36 +1,42 @@
-// #include <lapacke.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 // #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-// #include "ica.h"
 #include "../util/util.h"
 #include <gsl/gsl_eigen.h>
 #include "../ica.h"
-// #include <gsl/gsl_math.h>
 // Input matrix
-size_t NROW = 2000, NCOL = 10000;
+size_t NROW = 200, NCOL = 10000;
 gsl_matrix *input;
 // check if memory was allocated
 
 // unit testing for ICA
-int init_suite1(void)
+int init_suite_util(void)
 {
   input = gsl_matrix_alloc(NROW, NCOL);
   if (NULL==input) return 1;
-
+  gsl_matrix_set_all(input, 1.0);
   return 0;
 }
 
-int clean_suite1(void)
+int clean_suite_util(void)
 {
   gsl_matrix_free(input);
   return 0;
 }
 
+int init_suite_ica(void){
+  input = gsl_matrix_alloc(NROW,NCOL);
+  if (NULL==input) return 1;
+  fill_matrix_random(input);
+  matrix_demean(input);
+
+  return 0;
+}
+
 void test_matrix_mean(void){
   // Test the util function matrix_mean
-  gsl_matrix_set_all(input, 1.0);
+
   // print_matrix_corner(input);
 
   // Compute column mean
@@ -46,7 +52,6 @@ void test_matrix_mean(void){
 
 void test_matrix_demean(void){
   // Test the util function matrix_demean
-  gsl_matrix_set_all(input, 1.0);
 
   matrix_demean(input);
   gsl_vector *mean = matrix_mean(input);
@@ -59,8 +64,6 @@ void test_matrix_demean(void){
 }
 
 void test_matrix_cov(void){
-  fill_matrix_random(input);
-  matrix_demean(input);
   gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
   matrix_cov(input, cov);
   // print_matrix_corner(cov);
@@ -85,23 +88,17 @@ void test_pca_whiten(void)  {
   white = gsl_matrix_alloc(NCOMP, input->size1);
   dewhite = gsl_matrix_alloc(input->size1, NCOMP);
   x_white = gsl_matrix_alloc(NCOMP, input->size2);
-  fill_matrix_random(input);
 
-  CU_ASSERT_PTR_NOT_NULL(input);
-  matrix_demean(input);
-
-  pca_whiten(input, 10, x_white, white, dewhite, 0);
+  pca_whiten(input, NCOMP, x_white, white, dewhite, 0);
   // test if covariance of ouput is identity
   gsl_matrix *cov = gsl_matrix_alloc(NCOMP,NCOMP);
   matrix_cov(x_white, cov);
-  gsl_matrix *expected_cov = gsl_matrix_alloc(10,10);
+  gsl_matrix *expected_cov = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(expected_cov);
   gsl_matrix_sub(cov, expected_cov);
-  printf("----------\nDif norm: %.2e",matrix_norm(cov));
+  printf("\nDif norm: %.2e",matrix_norm(cov));
   CU_ASSERT(matrix_norm(cov)<1e-6);
-
-  // test if dewhitening reconstructs data
-
+  printf("\n");
 
   gsl_matrix_free(cov);
   gsl_matrix_free(white);
@@ -120,13 +117,15 @@ int main()
       return CU_get_error();
 
    /* add a suite to the registry */
-   pSuite_util = CU_add_suite("Suite_util", init_suite1, clean_suite1);
+   pSuite_util = CU_add_suite("Suite_util",
+    init_suite_util, clean_suite_util);
    if (NULL == pSuite_util) {
       CU_cleanup_registry();
       return CU_get_error();
    }
 
-   pSuite_ica = CU_add_suite("Suite_ICA", init_suite1, clean_suite1);
+   pSuite_ica = CU_add_suite("Suite_ICA",
+    init_suite_ica, clean_suite_util);
    if (NULL == pSuite_ica) {
       CU_cleanup_registry();
       return CU_get_error();
