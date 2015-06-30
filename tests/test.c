@@ -9,7 +9,7 @@
 #include "../ica.h"
 // #include <gsl/gsl_math.h>
 // Input matrix
-size_t NROW = 100, NCOL = 100000;
+size_t NROW = 2000, NCOL = 10000;
 gsl_matrix *input;
 // check if memory was allocated
 
@@ -30,7 +30,7 @@ int clean_suite1(void)
 
 void test_matrix_mean(void){
   // Test the util function matrix_mean
-  fill_matrix_const(input, 1.0);
+  gsl_matrix_set_all(input, 1.0);
   // print_matrix_corner(input);
 
   // Compute column mean
@@ -46,7 +46,7 @@ void test_matrix_mean(void){
 
 void test_matrix_demean(void){
   // Test the util function matrix_demean
-  fill_matrix_const(input, 1.0);
+  gsl_matrix_set_all(input, 1.0);
 
   matrix_demean(input);
   gsl_vector *mean = matrix_mean(input);
@@ -91,16 +91,17 @@ void test_pca_whiten(void)  {
   matrix_demean(input);
 
   pca_whiten(input, 10, x_white, white, dewhite, 0);
+  // test if covariance of ouput is identity
   gsl_matrix *cov = gsl_matrix_alloc(NCOMP,NCOMP);
   matrix_cov(x_white, cov);
-
-  // print_matrix_corner(cov);
   gsl_matrix *expected_cov = gsl_matrix_alloc(10,10);
   gsl_matrix_set_identity(expected_cov);
-
   gsl_matrix_sub(cov, expected_cov);
-
+  printf("----------\nDif norm: %.2e",matrix_norm(cov));
   CU_ASSERT(matrix_norm(cov)<1e-6);
+
+  // test if dewhitening reconstructs data
+
 
   gsl_matrix_free(cov);
   gsl_matrix_free(white);

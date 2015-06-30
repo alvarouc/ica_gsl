@@ -1,4 +1,4 @@
-// #include <lapacke.h>
+#include <lapacke/lapacke.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
@@ -10,8 +10,6 @@ double MAX_W = 1e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
 double W_STOP = 1e-6;
-
-
 
 void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
                 gsl_matrix *x_white,
@@ -28,11 +26,20 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   // Set up eigen decomposition
   gsl_vector *eval = gsl_vector_alloc(cov->size1); //eigen values
   gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
 
+
+  //Compute eigen values with LAPACK
+  int info = 0;
+  info = LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
+    cov->size1, cov->data, cov->size1, eval->data);
+  gsl_matrix_memcpy(evec,cov);
+  /*
+  //Compute eigen values with GSL
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
   gsl_eigen_symmv(cov, eval, evec, w);
   gsl_matrix_free(cov);
   gsl_eigen_symmv_free(w);
+  */
   // sort eigen values
   gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
   // reduce number of components

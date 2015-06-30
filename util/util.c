@@ -1,6 +1,14 @@
 #include "util.h"
 #include <gsl/gsl_math.h>
 #include <math.h>
+
+void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C){
+  //  Computes C = A x B
+
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, A, B, 0.0, C);
+
+}
+
 double matrix_norm(gsl_matrix *input){
 
   size_t i,j;
@@ -71,8 +79,8 @@ void fill_matrix_random(gsl_matrix *input){
 
   int i,j;
 
-  for (i = 0; i < NROW; i++)
-    for (j = 0; j < NCOL; j++){
+  for (j = 0; j < NCOL; j++)
+    for (i = 0; i < NROW; i++){
                   gsl_matrix_set(input, i, j, (double)(rand()%100));
           }
 

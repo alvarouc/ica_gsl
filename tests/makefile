@@ -2,8 +2,8 @@
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
 LIBS_TEST=-lopenblas -llapack -lcunit -lgsl -lm
-LIBS_UTIL=-lopenblas
-CFLAGS= -Wall
+LIBS_UTIL=-lopenblas -llapacke -llapack
+CFLAGS=-pg -Wall
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o
 
