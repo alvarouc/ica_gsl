@@ -2,6 +2,17 @@
 #include <gsl/gsl_math.h>
 #include <math.h>
 
+void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
+  size_t i,j;
+  for (j = 0; j < input->size2; j++) {
+    for (i = 0; i < input->size1; i++) {
+      gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
+    }
+  }
+
+}
+
+
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C){
   //  Computes C = A x B
 

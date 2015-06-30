@@ -14,7 +14,7 @@ util.o: ../util/util.c ../util/util.h
 	$(CC) -c ../util/util.c $(CFLAGS) $(LIBS_UTIL)
 
 ica.o: ../ica.c ../ica.h
-	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL)
+	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL) -lapop
 
 test.o: test.c
 	$(CC) -c test.c $(CFLAGS) $(LIBS_TEST)

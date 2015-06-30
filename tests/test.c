@@ -108,7 +108,7 @@ void test_pca_whiten(void)  {
 
 void test_w_update(void){
   gsl_matrix *unmixer, *x_white, *bias;
-  double *lrate = NULL;
+  double lrate = 0.01;
   int *error = NULL;
   size_t NCOMP=10;
 
@@ -120,9 +120,10 @@ void test_w_update(void){
   pca_whiten(input, NCOMP, x_white, white, dewhite, 0);
 
   unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
-  bias = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix_set_identity(unmixer);
+  bias = gsl_matrix_calloc(NCOMP,1);
   print_matrix_corner(x_white);
-  w_update(unmixer, x_white, bias, lrate, error);
+  w_update(unmixer, x_white, bias, &lrate, error);
 
   gsl_matrix_free(x_white);
   gsl_matrix_free(unmixer);
