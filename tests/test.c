@@ -106,6 +106,23 @@ void test_pca_whiten(void)  {
   gsl_matrix_free(x_white);
 }
 
+void test_w_update(void){
+  gsl_matrix *unmixer, *x_white, *bias;
+  double *lrate = NULL;
+  int *error = NULL;
+  size_t NCOMP=10;
+
+  x_white = gsl_matrix_alloc(NCOMP, input->size2);
+  unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  bias = gsl_matrix_alloc(NCOMP,NCOMP);
+
+  w_update(unmixer, x_white, bias, lrate, error);
+
+  gsl_matrix_free(x_white);
+  gsl_matrix_free(unmixer);
+
+}
+
 // functional testing for ICA
 int main()
 {
@@ -145,7 +162,10 @@ int main()
   test_matrix_cov)) ||
 (NULL == CU_add_test(pSuite_ica,
   "test whitening",
-  test_pca_whiten))
+  test_pca_whiten)) ||
+  (NULL == CU_add_test(pSuite_ica,
+    "test mixing matrix update",
+    test_w_update))
       )
    {
       CU_cleanup_registry();

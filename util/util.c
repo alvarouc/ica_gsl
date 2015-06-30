@@ -115,5 +115,12 @@ void matrix_cov(const gsl_matrix *input, gsl_matrix *cov){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-  gsl_matrix_scale(cov, (double)(1.0/(double)(input->size2)));
+  gsl_matrix_scale(cov, 1.0/(double)(input->size2));
+  /*
+  size_t i = 0;
+  gsl_vector_view row;
+  for (i = 0; i < cov->size2; i++) {
+    row = gsl_matrix_row(cov,i);
+    gsl_blas_dscal(1.0/(double)(input->size2), &row.vector);
+  }*/
 }

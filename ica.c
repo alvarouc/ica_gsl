@@ -4,6 +4,8 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
 #include "util/util.h"
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 double EPS = 1e-18;
 double MAX_W = 1e8;
@@ -71,11 +73,51 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   gsl_vector_free(eval);
 
 }
-/*
-void w_update(double *unmixer, double *x_white, double *bias1,
-              double *lrate1, double *error){
 
-              }
+void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
+  gsl_matrix *bias1, double *lrate1, int *error)
+{
+  const size_t NVOX = x_white->size2;
+  // const size_t NCOMP = x_white->size1;
+  size_t block = (size_t)floor(sqrt(NVOX/3.0));
+  printf("\n***block size: %zu",block);
+  gsl_vector *ib = gsl_vector_alloc(block);
+  gsl_vector_set_all( ib, 1.0);
+  //getting permutation vector
+  gsl_vector *permute = gsl_vector_alloc(NVOX);
+  size_t i;
+  for (i = 0; i < NVOX; i++) {
+    gsl_vector_set(permute, i, i);
+  }
+  gsl_rng * r;
+  const gsl_rng_type * T;
+  // gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+  gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
+
+  size_t start;
+  size_t end;
+  gsl_matrix_view sub_x_white;
+  for (start = 0; i <= NVOX; start = start + block) {
+    if (start + block < NVOX)
+      end = start+block;
+    else{
+      end = NVOX;
+      block = NVOX-start;
+    }
+    
+
+  }
+
+
+  //clean up
+  gsl_rng_free (r);
+  gsl_vector_free(permute);
+  gsl_vector_free(ib);
+
+}
+/*
 void infomax1(double *x_white){
 
 }
