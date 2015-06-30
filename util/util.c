@@ -1,4 +1,19 @@
 #include "util.h"
+#include <gsl/gsl_math.h>
+#include <math.h>
+double matrix_norm(gsl_matrix *input){
+
+  size_t i,j;
+  double accum=0;
+  for (i = 0; i < input->size1; i++) {
+    for (j = 0; j < input->size2; j++) {
+      accum += gsl_pow_2(gsl_matrix_get(input,i,j));
+    }
+  }
+
+  return sqrt(accum);
+
+}
 
 void matrix_demean(gsl_matrix *input){
 
@@ -95,17 +110,14 @@ void print_vector_head(gsl_vector *input){
 
 }
 
-gsl_matrix *matrix_cov(gsl_matrix *input){
+void matrix_cov(const gsl_matrix *input, gsl_matrix *cov){
   /*Compute matrix covariance
   The input is a matrix with an observation per row
   The function assumes the matrix is demeaned
   Note: This can be optimized to exploid matrix symmetry
   */
 
-  gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
-
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-  gsl_matrix_scale(cov, 1.0/(input->size1-1));
-  return cov;
+  gsl_matrix_scale(cov, (double)(1.0/(double)(input->size2)));
 }

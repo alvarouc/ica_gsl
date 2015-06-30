@@ -6,9 +6,10 @@
 // #include "ica.h"
 #include "../util/util.h"
 #include <gsl/gsl_eigen.h>
-
+#include "../ica.h"
+// #include <gsl/gsl_math.h>
 // Input matrix
-size_t NROW = 1000, NCOL = 10000;
+size_t NROW = 100, NCOL = 100000;
 gsl_matrix *input;
 // check if memory was allocated
 
@@ -60,9 +61,8 @@ void test_matrix_demean(void){
 void test_matrix_cov(void){
   fill_matrix_random(input);
   matrix_demean(input);
-
-  gsl_matrix *cov = matrix_cov(input);
-  CU_ASSERT_PTR_NOT_NULL(cov);
+  gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
+  matrix_cov(input, cov);
   // print_matrix_corner(cov);
   size_t i,j;
   size_t n_diferent = 0;
@@ -76,44 +76,36 @@ void test_matrix_cov(void){
 
 }
 
-void test_eigen_decomp(void){
-  fill_matrix_random(input);
-  // printf("Raw Input Matrix\n");
-  // print_matrix_corner(input);
-
-  matrix_demean(input);
-
-  // printf("demeaned Matrix\n");
-  // print_matrix_corner(input);
-  gsl_matrix *cov = matrix_cov(input);
-  // Set up eigen decomposition
-  gsl_vector *eval = gsl_vector_alloc(cov->size1); //eigen values
-  gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
-  CU_ASSERT_PTR_NOT_NULL(w);
-  gsl_eigen_symmv(cov, eval, evec, w);
-  gsl_eigen_symmv_free(w);
-
-  CU_ASSERT_PTR_NOT_NULL(eval);
-  CU_ASSERT_PTR_NOT_NULL(evec);
-
-  CU_FAIL("FInish the eigen test");
-}
-
 void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
+  gsl_matrix *x_white, *dewhite, *white;
+  size_t NCOMP=10;
+  white = gsl_matrix_alloc(NCOMP, input->size1);
+  dewhite = gsl_matrix_alloc(input->size1, NCOMP);
+  x_white = gsl_matrix_alloc(NCOMP, input->size2);
   fill_matrix_random(input);
-  print_matrix_corner(input);
 
+  CU_ASSERT_PTR_NOT_NULL(input);
   matrix_demean(input);
-  // gsl_matrix *white, *dewhite, *x_white;
-  // pca_whiten(input, 10, x_white, white, dewhite, 0);
 
+  pca_whiten(input, 10, x_white, white, dewhite, 0);
+  gsl_matrix *cov = gsl_matrix_alloc(NCOMP,NCOMP);
+  matrix_cov(x_white, cov);
 
-  // Clean up
-  CU_FAIL("Complete the test!");
+  // print_matrix_corner(cov);
+  gsl_matrix *expected_cov = gsl_matrix_alloc(10,10);
+  gsl_matrix_set_identity(expected_cov);
+
+  gsl_matrix_sub(cov, expected_cov);
+
+  CU_ASSERT(matrix_norm(cov)<1e-6);
+
+  gsl_matrix_free(cov);
+  gsl_matrix_free(white);
+  gsl_matrix_free(dewhite);
+  gsl_matrix_free(x_white);
 }
 
 // functional testing for ICA
@@ -152,8 +144,8 @@ int main()
   "test of matrix_cov()",
   test_matrix_cov)) ||
 (NULL == CU_add_test(pSuite_ica,
-  "test eigen decomposition",
-  test_eigen_decomp))
+  "test whitening",
+  test_pca_whiten))
       )
    {
       CU_cleanup_registry();

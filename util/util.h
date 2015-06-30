@@ -14,7 +14,8 @@ void fill_matrix_const( gsl_matrix *input, float const x);
 void fill_vector_const(gsl_vector *input, float const x);
 void print_matrix_corner(gsl_matrix *input);
 void print_vector_head(gsl_vector *input);
-gsl_matrix *matrix_cov(gsl_matrix *input);
+void matrix_cov(const gsl_matrix *input, gsl_matrix *cov);
+double matrix_norm(gsl_matrix *input);
 
 #endif // FOO_H_
 
