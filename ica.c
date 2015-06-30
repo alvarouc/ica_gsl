@@ -78,9 +78,9 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix *bias1, double *lrate1, int *error)
 {
   const size_t NVOX = x_white->size2;
-  // const size_t NCOMP = x_white->size1;
+  const size_t NCOMP = x_white->size1;
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
-  printf("\n***block size: %zu",block);
+  printf("\n***block size: %zu\n",block);
   gsl_vector *ib = gsl_vector_alloc(block);
   gsl_vector_set_all( ib, 1.0);
   //getting permutation vector
@@ -97,16 +97,21 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
 
   size_t start;
-  size_t end;
-  gsl_matrix_view sub_x_white;
-  for (start = 0; i <= NVOX; start = start + block) {
-    if (start + block < NVOX)
-      end = start+block;
-    else{
-      end = NVOX;
+  gsl_matrix *sub_x_white =gsl_matrix_alloc(NCOMP, block);
+  gsl_vector_view src, dest;
+  for (start = 0; start < NVOX; start = start + block) {
+    if (start + block > NVOX-1){
       block = NVOX-start;
+      gsl_matrix_free(sub_x_white);
+      gsl_matrix_alloc(NCOMP, block);
     }
-    
+
+    for (i = start; i < start+block; i++) {
+      src = gsl_matrix_column(x_white, gsl_vector_get(permute, i));
+      dest = gsl_matrix_column(sub_x_white, i-start);
+      gsl_vector_memcpy(&dest.vector, &src.vector);
+    }
+    print_matrix_corner(sub_x_white);
 
   }
 

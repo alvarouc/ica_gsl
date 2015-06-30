@@ -6,7 +6,7 @@
 #include <gsl/gsl_eigen.h>
 #include "../ica.h"
 // Input matrix
-size_t NROW = 200, NCOL = 10000;
+size_t NROW = 200, NCOL = 1000;
 gsl_matrix *input;
 // check if memory was allocated
 
@@ -112,15 +112,23 @@ void test_w_update(void){
   int *error = NULL;
   size_t NCOMP=10;
 
+  gsl_matrix *dewhite, *white;
+  white = gsl_matrix_alloc(NCOMP, input->size1);
+  dewhite = gsl_matrix_alloc(input->size1, NCOMP);
   x_white = gsl_matrix_alloc(NCOMP, input->size2);
+
+  pca_whiten(input, NCOMP, x_white, white, dewhite, 0);
+
   unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   bias = gsl_matrix_alloc(NCOMP,NCOMP);
-
+  print_matrix_corner(x_white);
   w_update(unmixer, x_white, bias, lrate, error);
 
   gsl_matrix_free(x_white);
   gsl_matrix_free(unmixer);
-
+  gsl_matrix_free(white);
+  gsl_matrix_free(bias);
+  gsl_matrix_free(dewhite);
 }
 
 // functional testing for ICA
