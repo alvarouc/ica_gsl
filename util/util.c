@@ -1,6 +1,28 @@
 #include "util.h"
 #include <gsl/gsl_math.h>
 #include <math.h>
+// #include <stdio.h>
+#include <gsl/gsl_rng.h>
+
+void random_vector(gsl_vector *vec, double (* func)(const gsl_rng *, double )){
+  //
+  const gsl_rng_type * T;
+  gsl_rng * r;
+
+  int i;
+
+  gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+
+  for (i = 0; i < vec->size; i++)
+    {
+      // double u = gsl_rng_uniform (r);
+      gsl_vector_set(vec, i, func(r, 1.0));
+    }
+
+  gsl_rng_free (r);
+}
 
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;

@@ -5,6 +5,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_rng.h>
 #include <gsl/gsl_statistics.h>
 
 gsl_vector *matrix_mean(gsl_matrix *input);
@@ -17,6 +18,8 @@ void matrix_cov(const gsl_matrix *input, gsl_matrix *cov);
 double matrix_norm(gsl_matrix *input);
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double));
+void random_vector(gsl_vector *vec, double (* func)(const gsl_rng *, double ));
+
 
 #endif // FOO_H_
 

@@ -4,7 +4,9 @@
 #include <CUnit/Basic.h>
 #include "../util/util.h"
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_rng.h>
 #include "../ica.h"
+#include <gsl/gsl_randist.h>
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 gsl_matrix *input;
@@ -32,6 +34,15 @@ int init_suite_ica(void){
   matrix_demean(input);
 
   return 0;
+}
+
+void test_random_vector(void){
+
+  gsl_vector *vec = gsl_vector_calloc(NCOL);
+  print_vector_head(vec);
+  random_vector(vec, gsl_ran_gaussian);
+  print_vector_head(vec);
+
 }
 
 void test_matrix_mean(void){
@@ -137,6 +148,26 @@ void test_w_update(void){
   gsl_matrix_free(dewhite);
 }
 
+void test_infomax(void){
+  size_t NCOMP = 3;
+  size_t NVOX = 10000;
+  gsl_matrix *true_A = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *true_S = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *true_X = gsl_matrix_alloc(NCOMP,NVOX);
+  gsl_matrix *estimated_A = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *estimated_S = gsl_matrix_alloc(NCOMP, NVOX);
+
+
+
+  gsl_matrix_free(true_A);
+  gsl_matrix_free(true_S);
+  gsl_matrix_free(true_X);
+  gsl_matrix_free(estimated_A);
+  gsl_matrix_free(estimated_S);
+
+}
+
+
 // functional testing for ICA
 int main()
 {
@@ -171,6 +202,9 @@ int main()
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_demean()",
   test_matrix_demean)) ||
+(NULL == CU_add_test(pSuite_util,
+    "test of random_vector()",
+    test_random_vector)) ||
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_cov()",
   test_matrix_cov)) ||
