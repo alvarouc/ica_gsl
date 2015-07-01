@@ -6,7 +6,7 @@
 #include <gsl/gsl_eigen.h>
 #include "../ica.h"
 // Input matrix
-size_t NROW = 200, NCOL = 1000;
+size_t NROW = 500, NCOL = 100000;
 gsl_matrix *input;
 // check if memory was allocated
 
@@ -96,9 +96,7 @@ void test_pca_whiten(void)  {
   gsl_matrix *expected_cov = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(expected_cov);
   gsl_matrix_sub(cov, expected_cov);
-  printf("\nDif norm: %.2e",matrix_norm(cov));
   CU_ASSERT(matrix_norm(cov)<1e-6);
-  printf("\n");
 
   gsl_matrix_free(cov);
   gsl_matrix_free(white);
@@ -108,8 +106,9 @@ void test_pca_whiten(void)  {
 
 void test_w_update(void){
   gsl_matrix *unmixer, *x_white, *bias;
-  double lrate = 0.01;
-  int *error = NULL;
+  double rate = 1e-3;
+  double *lrate;
+  lrate = &rate;
   size_t NCOMP=10;
 
   gsl_matrix *dewhite, *white;
@@ -122,8 +121,14 @@ void test_w_update(void){
   unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(unmixer);
   bias = gsl_matrix_calloc(NCOMP,1);
-  print_matrix_corner(x_white);
-  w_update(unmixer, x_white, bias, &lrate, error);
+  int error = 0;
+  error = w_update(unmixer, x_white, bias, lrate);
+  CU_ASSERT_EQUAL(error, 0);
+
+  *lrate = 1000;
+  error = w_update(unmixer, x_white, bias, lrate);
+  CU_ASSERT_EQUAL(error, 1);
+
 
   gsl_matrix_free(x_white);
   gsl_matrix_free(unmixer);

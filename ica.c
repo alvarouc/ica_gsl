@@ -79,13 +79,12 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
 
 }
 
-void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
-  gsl_matrix *bias, double *lrate, int *error)
+int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
+  gsl_matrix *bias, double *lrate)
 {
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
-  printf("\n***block size: %zu\n",block);
   gsl_matrix *ib = gsl_matrix_alloc(1,block);
   gsl_matrix_set_all( ib, 1.0);
   //getting permutation vector
@@ -108,6 +107,7 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix *temp_I = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *ones = gsl_matrix_alloc(block,1);
   gsl_matrix_set_all(ones, 1.0);
+  double max;
 
   // gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_vector_view src, dest;
@@ -153,10 +153,22 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
     // Update the bias
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *lrate,
       unm_logit, ones, 1.0,  bias);
-    print_matrix_corner(bias);
     // check if blows up
-    printf("max = %.2f",gsl_matrix_max(unmixer));
+    max = gsl_matrix_max(unmixer);
+    if (max > MAX_W){
+      // It blowed up!
+      *lrate = *lrate * ANNEAL;
+      gsl_matrix_set_identity(unmixer);
+      gsl_matrix_set_zero(bias);
 
+      if (*lrate<1e-6) {
+        printf("\nERROR: Weight matrix may not be invertible\n");
+        return(2);
+
+      }
+
+      return 1;
+    }
   }
 
 
@@ -168,6 +180,7 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix_free(temp_I);
   gsl_matrix_free(sub_x_white);
   gsl_matrix_free(ones);
+  return(0);
 
 }
 /*
