@@ -169,20 +169,30 @@ void test_infomax(void){
   gsl_matrix *true_X = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix *estimated_A = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *estimated_S = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *estimated_X = gsl_matrix_alloc(NCOMP,NVOX);
 
   // Random gaussian mixing matrix A
-  gsl_vector *temp = gsl_vector_alloc(NCOMP*NCOMP);
-  random_vector(temp, 1.0, gsl_ran_gaussian);
-  gsl_matrix_view temp_view = gsl_matrix_view_array(temp->data, NCOMP, NCOMP);
-  gsl_matrix_memcpy(true_A, &temp_view.matrix);
+  random_matrix(true_A, 1.0, gsl_ran_gaussian);
+  // Random logistic mixing matrix S
+  random_matrix(true_S, 1.0, gsl_ran_logistic);
+  // X = AS
+  matrix_mmul(true_A, true_S, true_X);
+  infomax(true_X, estimated_A, estimated_S);
+
+  matrix_mmul(estimated_A, estimated_S, estimated_X);
+
+  gsl_matrix_sub(true_X, estimated_X);
+  if (matrix_norm(true_X)> 1.0e-6)
+    CU_FAIL("Matrix reconstruction error is higher than 1e-6");
+
   print_matrix_corner(true_A);
 
-  gsl_vector_free(temp);
   gsl_matrix_free(true_A);
   gsl_matrix_free(true_S);
   gsl_matrix_free(true_X);
   gsl_matrix_free(estimated_A);
   gsl_matrix_free(estimated_S);
+  gsl_matrix_free(estimated_X);
 
 }
 
@@ -234,7 +244,7 @@ int main()
     "test mixing matrix update",
     test_w_update)) ||
 (NULL == CU_add_test(pSuite_ica,
-    "test mixing matrix update",
+    "test infomax",
     test_infomax))
       )
    {

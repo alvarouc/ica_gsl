@@ -184,9 +184,9 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
 
 }
 
-void infomax1(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
+void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
 
-  
+
 
 }
 
