@@ -10,8 +10,6 @@
 
 gsl_vector *matrix_mean(gsl_matrix *input);
 void matrix_demean(gsl_matrix *input);
-void fill_matrix_random(gsl_matrix *input);
-void fill_vector_const(gsl_vector *input, float const x);
 void print_matrix_corner(gsl_matrix *input);
 void print_vector_head(gsl_vector *input);
 void matrix_cov(const gsl_matrix *input, gsl_matrix *cov);
@@ -22,5 +20,6 @@ void matrix_apply_all(gsl_matrix *input, double (*fun)(double));
 void random_vector(gsl_vector *vec,  double parameter, double (* func)(const gsl_rng *, double ));
 void random_matrix(gsl_matrix *input, double parameter,double (* func)(const gsl_rng *, double ));
 // void matrix_pinv(gsl_matrix *input, gsl_matrix *output)
+void matrix_inv(gsl_matrix *input, gsl_matrix *output);
 
 #endif // FOO_H_

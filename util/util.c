@@ -3,6 +3,17 @@
 #include <math.h>
 // #include <stdio.h>
 #include <gsl/gsl_rng.h>
+#include <gsl/gsl_linalg.h>
+
+void matrix_inv(gsl_matrix *input, gsl_matrix *output){
+
+  int s;
+  gsl_permutation * p = gsl_permutation_alloc (input->size1);
+  gsl_linalg_LU_decomp (input, p, &s);
+  gsl_linalg_LU_invert (input, p, output);
+  gsl_permutation_free(p);
+
+}
 
 void random_matrix(gsl_matrix *input, double parameter,double (* func)(const gsl_rng *, double )){
 
@@ -61,7 +72,7 @@ double matrix_norm(gsl_matrix *input){
     }
   }
 
-  return sqrt(accum);
+  return (accum);
 
 }
 
@@ -74,7 +85,7 @@ double matrix_sum(gsl_matrix *input){
       accum += gsl_matrix_get(input,i,j);
     }
   }
-  return sqrt(accum);
+  return (accum);
 
 }
 
@@ -104,28 +115,6 @@ gsl_vector *matrix_mean(gsl_matrix *input){
   }
 
   return mean;
-
-}
-
-void fill_vector_const(gsl_vector *input, float const x){
-  size_t N = input->size;
-  size_t i;
-  for (i = 0; i < N; i++)
-    gsl_vector_set(input, i, x);
-
-}
-
-void fill_matrix_random(gsl_matrix *input){
-// Fill a GSL matrix with random numbers
-  size_t NROW = input->size1;
-  size_t NCOL = input->size2;
-
-  int i,j;
-
-  for (j = 0; j < NCOL; j++)
-    for (i = 0; i < NROW; i++){
-                  gsl_matrix_set(input, i, j, (double)(rand()%100));
-          }
 
 }
 

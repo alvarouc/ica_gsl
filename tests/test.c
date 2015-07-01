@@ -1,12 +1,12 @@
-#include <gsl/gsl_matrix.h>
-#include <gsl/gsl_blas.h>
 // #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 #include "../util/util.h"
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_rng.h>
-#include "../ica.h"
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
 #include <gsl/gsl_randist.h>
+#include "../ica.h"
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 gsl_matrix *input;
@@ -30,10 +30,37 @@ int clean_suite_util(void)
 int init_suite_ica(void){
   input = gsl_matrix_alloc(NROW,NCOL);
   if (NULL==input) return 1;
-  fill_matrix_random(input);
+  random_matrix(input, 1, gsl_ran_logistic);
   matrix_demean(input);
 
   return 0;
+}
+
+void test_matrix_inv(void){
+
+  double m[2][2] = {{10,0},{0,10}};
+  double inv_m[2][2] = {{0.1,0},{0,0.1}};
+  gsl_matrix_view x = gsl_matrix_view_array(&m[0][0],2,2);
+  gsl_matrix_view xx = gsl_matrix_view_array(&inv_m[0][0],2,2);
+  gsl_matrix *inv_x = gsl_matrix_alloc(2,2);
+  matrix_inv(&x.matrix,inv_x);
+  if (gsl_matrix_equal(inv_x, &xx.matrix))
+    CU_PASS("Inverse is working");
+
+}
+
+void test_random_matrix(void){
+  gsl_matrix *vec = gsl_matrix_alloc(1000,1000);
+  random_matrix(vec, 2.0, gsl_ran_gaussian);
+
+  gsl_matrix *vec2 = gsl_matrix_alloc(1000,1000);
+  random_matrix(vec2, 2.0, gsl_ran_gaussian);
+  if (gsl_matrix_equal(vec,vec2))
+    CU_FAIL("random matrices are always the same");
+
+  gsl_matrix_free(vec);
+  gsl_matrix_free(vec2);
+
 }
 
 void test_random_vector(void){
@@ -68,7 +95,7 @@ void test_matrix_mean(void){
   CU_ASSERT_PTR_NOT_NULL(mean);
   // Compare to the expected mean
   gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
-  fill_vector_const(expected_mean, 1.0);
+  gsl_vector_set_all(expected_mean, 1.0);
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
 
   // print_vector_head(mean);
@@ -82,7 +109,7 @@ void test_matrix_demean(void){
 
   // Compare mean to the expected mean
   gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
-  fill_vector_const(expected_mean, 0.0);
+  gsl_vector_set_all(expected_mean, 0.0);
 
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
 }
@@ -95,18 +122,18 @@ void test_matrix_cov(void){
   size_t n_diferent = 0;
   for (i = 0; i < cov->size1; i++) {
     for (j = 0; j < cov->size2; j++) {
-      if (gsl_matrix_get(cov,0,1)!=gsl_matrix_get(cov,1,0))
+      if (gsl_matrix_get(cov,i,j)!=gsl_matrix_get(cov,j,i))
         n_diferent ++;
     }
   }
   CU_ASSERT_EQUAL(n_diferent, 0 );
-
 }
 
 void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
+  printf("\nAqui toy\n");
   gsl_matrix *x_white, *dewhite, *white;
   size_t NCOMP=10;
   white = gsl_matrix_alloc(NCOMP, input->size1);
@@ -182,12 +209,17 @@ void test_infomax(void){
   matrix_mmul(estimated_A, estimated_S, estimated_X);
 
   gsl_matrix_sub(true_X, estimated_X);
-  if (matrix_norm(true_X)> 1.0e-6)
-    CU_FAIL(printf("Matrix reconstruction error is %.2f",
-      matrix_norm(true_X)));
+  if (matrix_norm(true_X)> 1.0e-6){
+    printf("\nReconstruction error %.2e",matrix_norm(true_X));
+    CU_FAIL("Matrix reconstruction is too high");
+  }
 
+  printf("\n\nTRUE A");
   print_matrix_corner(true_A);
+  printf("\nESTIMATED A");
+  print_matrix_corner(estimated_A);
 
+  //Clean
   gsl_matrix_free(true_A);
   gsl_matrix_free(true_S);
   gsl_matrix_free(true_X);
@@ -227,14 +259,20 @@ int main()
    /* add the tests to the suite */
    if (
 (NULL == CU_add_test(pSuite_util,
+  "test of matrix_inv()",
+  test_matrix_inv)) ||
+(NULL == CU_add_test(pSuite_util,
+  "test of random_matrix()",
+  test_random_matrix)) ||
+(NULL == CU_add_test(pSuite_util,
+  "test of random_vector()",
+  test_random_vector)) ||
+(NULL == CU_add_test(pSuite_util,
   "test of matrix_mean()",
   test_matrix_mean)) ||
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_demean()",
   test_matrix_demean)) ||
-(NULL == CU_add_test(pSuite_util,
-    "test of random_vector()",
-    test_random_vector)) ||
 (NULL == CU_add_test(pSuite_util,
   "test of matrix_cov()",
   test_matrix_cov)) ||

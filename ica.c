@@ -1,16 +1,15 @@
-#include <lapacke/lapacke.h>
+// #include <lapacke/lapacke.h>
+#include "util/util.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
-#include "util/util.h"
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <math.h>
-#include <gsl/gsl_linalg.h>
 
 double EPS = 1e-18;
-double MAX_W = 1e8;
+double MAX_W = 1.0e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
 double W_STOP = 1e-6;
@@ -84,6 +83,7 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
 int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix *bias, double *lrate)
 {
+  int error =0;
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
@@ -100,6 +100,7 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   // gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
+  gsl_rng_set (r, rand());
   gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
 
   size_t start;
@@ -111,13 +112,13 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix_set_all(ones, 1.0);
   double max;
 
-  // gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_vector_view src, dest;
   for (start = 0; start < NVOX; start = start + block) {
     if (start + block > NVOX-1){
       block = NVOX-start;
       gsl_matrix_free(sub_x_white);
-      gsl_matrix_alloc(NCOMP, block);
+      sub_x_white= gsl_matrix_alloc(NCOMP, block);
       gsl_matrix_free(ib);
       ib = gsl_matrix_alloc(1,block);
       gsl_matrix_set_all( ib, 1.0);
@@ -130,7 +131,7 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
       gsl_matrix_set_all(ones, 1.0);
 
     }
-
+    // xwhite[:, permute[start:start+block]]
     for (i = start; i < start+block; i++) {
       src = gsl_matrix_column(x_white, gsl_vector_get(permute, i));
       dest = gsl_matrix_column(sub_x_white, i-start);
@@ -149,40 +150,37 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
     gsl_blas_dgemm(CblasNoTrans,CblasTrans,
     1.0, unm_logit, unmixed, (double)block , temp_I);
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
-    // gsl_matrix_memcpy(d_unmixer, unmixer);
+    gsl_matrix_memcpy(d_unmixer, unmixer);
     gsl_blas_dgemm(CblasNoTrans,CblasTrans,
-      *lrate, temp_I, unmixer, 1.0, unmixer);
+      *lrate, temp_I, d_unmixer, 1.0, unmixer);
     // Update the bias
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *lrate,
       unm_logit, ones, 1.0,  bias);
     // check if blows up
     max = gsl_matrix_max(unmixer);
     if (max > MAX_W){
-      // It blowed up!
-      *lrate = *lrate * ANNEAL;
-      gsl_matrix_set_identity(unmixer);
-      gsl_matrix_set_zero(bias);
 
       if (*lrate<1e-6) {
         printf("\nERROR: Weight matrix may not be invertible\n");
-        return(2);
-
+        error = 2;
+        break;
       }
-
-      return 1;
+      error = 1;
+      break;
     }
   }
 
 
   //clean up
   gsl_rng_free (r);
+  gsl_matrix_free(d_unmixer);
   gsl_vector_free(permute);
   gsl_matrix_free(ib);
   gsl_matrix_free(unmixed);
   gsl_matrix_free(temp_I);
   gsl_matrix_free(sub_x_white);
   gsl_matrix_free(ones);
-  return(0);
+  return(error);
 
 }
 
@@ -198,63 +196,91 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   int verbose = 1; //true
 
   size_t NCOMP = x_white->size1;
-  gsl_matrix *unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *old_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *weights = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *bias = gsl_matrix_calloc(NCOMP, 1);
-  gsl_matrix *unmixer_change = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *oldwtchange = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *weights_change = gsl_matrix_calloc(NCOMP,NCOMP);
+  gsl_matrix *old_wt_change = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *temp_change = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix_set_identity(unmixer);
-  gsl_matrix_set_identity(old_unmixer);
+  gsl_matrix_set_identity(weights);
+  gsl_matrix_set_identity(old_weights);
   double lrate = 0.005/log((double)NCOMP);
-  double change = 100.0, old_change = 100.0, angle_delta;
-  size_t step = 1;
+  // double change = 100.0, old_change = 100.0,
+  double change;
+  double angle_delta =0;
+  size_t step = 0;
   int error = 0;
   while(step < MAX_STEP){
-      error = w_update(unmixer, x_white, bias, &lrate);
-      if (~error){ // if no error
-        gsl_matrix_memcpy(unmixer_change,unmixer);
-        gsl_matrix_sub(unmixer_change, old_unmixer);
-        change = matrix_norm(unmixer_change);
-        if (step == 1){
-          gsl_matrix_memcpy(oldwtchange, unmixer_change);
-          old_change = change;
-        }
-        else{
-          gsl_matrix_memcpy(temp_change, oldwtchange);
-          gsl_matrix_mul_elements(temp_change, unmixer_change);
-          angle_delta = acos(matrix_sum(temp_change) / sqrt(change*old_change));
-          angle_delta *= 180 / M_PI;
-          if (angle_delta > 60){
-            lrate *= ANNEAL;
-            gsl_matrix_memcpy(oldwtchange, unmixer_change);
-            old_change = change;
-          }
-          if ((verbose && (step % 10)== 0) || change < W_STOP){
-            printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
-              step, lrate, change, angle_delta);
-          }
-          if (change < W_STOP) step = MAX_STEP;
-        }
+    error = w_update(weights, x_white, bias, &lrate);
+    if (error==1){
+      // It blowed up! RESTART!
+      step = 0;
+      // change = 1;
+      error = 0;
+      lrate *= ANNEAL;
+      gsl_matrix_set_identity(weights);
+      gsl_matrix_set_identity(old_weights);
+      gsl_matrix_set_zero(old_wt_change);
+      gsl_matrix_set_zero(bias);
 
-      }else{
-        step = 1;
+      if (lrate > MIN_LRATE){
+        printf("\nLowering learning rate to %g and starting again.\n",lrate);
+      }
+      else{
+        printf("\nMatrix may not be invertible");
+      }
+    }
+    else if (error==0){
+      gsl_matrix_memcpy(old_wt_change, weights);
+      gsl_matrix_sub(old_wt_change, old_weights);
+
+      gsl_matrix_memcpy(weights_change, weights);
+      gsl_matrix_sub(weights_change, old_weights);
+      change = matrix_norm(weights_change);
+      step ++;
+      // change = matrix_norm(old_wt_change);
+      if (step > 2){
+        gsl_matrix_memcpy(temp_change, old_wt_change);
+        gsl_matrix_mul_elements(temp_change, weights_change);
+        angle_delta = acos(matrix_sum(temp_change) /
+          sqrt(matrix_norm(weights_change)*matrix_norm(old_wt_change)));
+        angle_delta *= (180.0 / M_PI);
+
       }
 
+      if (angle_delta > 60){
+        lrate *= ANNEAL;
+        gsl_matrix_memcpy(old_wt_change, weights_change);
+        // old_change = change;
+        gsl_matrix_memcpy(weights_change, weights);
+        gsl_matrix_sub(weights_change, old_weights);
 
-    step++;
+      } else if (step==1) {
+        // old_change = change;
+        gsl_matrix_memcpy(old_wt_change, weights_change);
+      }
+
+      gsl_matrix_memcpy(weights_change, weights);
+      gsl_matrix_sub(weights_change, old_weights);
+      if ((verbose && (step % 20)== 0) || change < W_STOP){
+        printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
+          step, lrate, change, angle_delta);
+      }
+
+      gsl_matrix_memcpy(old_weights, weights);
+      if (change < W_STOP) step = MAX_STEP;
+      if (change > 1.0e3 ) lrate *= ANNEAL;
+      }
+
   }
-  int s;
-  gsl_permutation * p = gsl_permutation_alloc (NCOMP);
-  gsl_linalg_LU_decomp (unmixer, p, &s);
-  gsl_linalg_LU_invert (unmixer, p, A);
-  gsl_permutation_free(p);
 
-  matrix_mmul(unmixer, x_white, S);
 
-  gsl_matrix_free(oldwtchange);
-  gsl_matrix_free(unmixer);
-  gsl_matrix_free(old_unmixer);
+  // weights ^-1
+  matrix_inv(weights, A);
+  matrix_mmul(weights, x_white, S);
+  gsl_matrix_free(old_wt_change);
+  gsl_matrix_free(weights);
+  gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
 }
 
