@@ -4,7 +4,7 @@
 // #include <stdio.h>
 #include <gsl/gsl_rng.h>
 
-void random_vector(gsl_vector *vec, double (* func)(const gsl_rng *, double )){
+void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl_rng *, double )){
   //
   const gsl_rng_type * T;
   gsl_rng * r;
@@ -14,11 +14,11 @@ void random_vector(gsl_vector *vec, double (* func)(const gsl_rng *, double )){
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-
+  gsl_rng_set (r, rand());
   for (i = 0; i < vec->size; i++)
     {
       // double u = gsl_rng_uniform (r);
-      gsl_vector_set(vec, i, func(r, 1.0));
+      gsl_vector_set(vec, i, func(r, parameter));
     }
 
   gsl_rng_free (r);

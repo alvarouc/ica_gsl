@@ -38,10 +38,23 @@ int init_suite_ica(void){
 
 void test_random_vector(void){
 
-  gsl_vector *vec = gsl_vector_calloc(NCOL);
+  gsl_vector *vec = gsl_vector_calloc(100000);
+  random_vector(vec, 2.0, gsl_ran_gaussian);
   print_vector_head(vec);
-  random_vector(vec, gsl_ran_gaussian);
-  print_vector_head(vec);
+
+  double mean = gsl_stats_mean (vec->data, vec->stride, vec->size);
+  double sd = gsl_stats_sd (vec->data, vec->stride, vec->size);
+  printf("* Mean %.2e, SD %.2f", mean, sd);
+  CU_ASSERT(mean < 0.01);
+  CU_ASSERT(abs(sd - 2) < 0.01);
+
+  gsl_vector *vec2 = gsl_vector_calloc(100000);
+  random_vector(vec2, 2.0, gsl_ran_gaussian);
+  if (gsl_vector_equal(vec,vec2))
+    CU_FAIL("random vectors are always the same");
+
+  gsl_vector_free(vec);
+  gsl_vector_free(vec2);
 
 }
 
