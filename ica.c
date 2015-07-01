@@ -7,12 +7,14 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <math.h>
+#include <gsl/gsl_linalg.h>
 
 double EPS = 1e-18;
 double MAX_W = 1e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
 double W_STOP = 1e-6;
+size_t MAX_STEP= 512;
 
 double logit(double in){
   return 1.0- 2.0*(1.0/(1.0 + exp(-in)));
@@ -185,9 +187,75 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
 }
 
 void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
+  /*Computes ICA infomax in whitened data
+    Decomposes x_white as x_white=AS
+    *Input
+    x_white: whitened data (Use PCAwhiten)
+    *Output
+    A : mixing matrix
+    S : source matrix
+  */
+  int verbose = 1; //true
+
+  size_t NCOMP = x_white->size1;
+  gsl_matrix *unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *old_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *bias = gsl_matrix_calloc(NCOMP, 1);
+  gsl_matrix *unmixer_change = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *oldwtchange = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *temp_change = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix_set_identity(unmixer);
+  gsl_matrix_set_identity(old_unmixer);
+  double lrate = 0.005/log((double)NCOMP);
+  double change = 100.0, old_change = 100.0, angle_delta;
+  size_t step = 1;
+  int error = 0;
+  while(step < MAX_STEP){
+      error = w_update(unmixer, x_white, bias, &lrate);
+      if (~error){ // if no error
+        gsl_matrix_memcpy(unmixer_change,unmixer);
+        gsl_matrix_sub(unmixer_change, old_unmixer);
+        change = matrix_norm(unmixer_change);
+        if (step == 1){
+          gsl_matrix_memcpy(oldwtchange, unmixer_change);
+          old_change = change;
+        }
+        else{
+          gsl_matrix_memcpy(temp_change, oldwtchange);
+          gsl_matrix_mul_elements(temp_change, unmixer_change);
+          angle_delta = acos(matrix_sum(temp_change) / sqrt(change*old_change));
+          angle_delta *= 180 / M_PI;
+          if (angle_delta > 60){
+            lrate *= ANNEAL;
+            gsl_matrix_memcpy(oldwtchange, unmixer_change);
+            old_change = change;
+          }
+          if ((verbose && (step % 10)== 0) || change < W_STOP){
+            printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
+              step, lrate, change, angle_delta);
+          }
+          if (change < W_STOP) step = MAX_STEP;
+        }
+
+      }else{
+        step = 1;
+      }
 
 
+    step++;
+  }
+  int s;
+  gsl_permutation * p = gsl_permutation_alloc (NCOMP);
+  gsl_linalg_LU_decomp (unmixer, p, &s);
+  gsl_linalg_LU_invert (unmixer, p, A);
+  gsl_permutation_free(p);
 
+  matrix_mmul(unmixer, x_white, S);
+
+  gsl_matrix_free(oldwtchange);
+  gsl_matrix_free(unmixer);
+  gsl_matrix_free(old_unmixer);
+  gsl_matrix_free(bias);
 }
 
 

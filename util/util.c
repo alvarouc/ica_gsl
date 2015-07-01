@@ -65,6 +65,19 @@ double matrix_norm(gsl_matrix *input){
 
 }
 
+double matrix_sum(gsl_matrix *input){
+
+  size_t i,j;
+  double accum=0;
+  for (i = 0; i < input->size1; i++) {
+    for (j = 0; j < input->size2; j++) {
+      accum += gsl_matrix_get(input,i,j);
+    }
+  }
+  return sqrt(accum);
+
+}
+
 void matrix_demean(gsl_matrix *input){
 
   gsl_vector *mean = matrix_mean(input);

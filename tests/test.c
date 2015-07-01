@@ -183,7 +183,8 @@ void test_infomax(void){
 
   gsl_matrix_sub(true_X, estimated_X);
   if (matrix_norm(true_X)> 1.0e-6)
-    CU_FAIL("Matrix reconstruction error is higher than 1e-6");
+    CU_FAIL(printf("Matrix reconstruction error is %.2f",
+      matrix_norm(true_X)));
 
   print_matrix_corner(true_A);
 
