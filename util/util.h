@@ -19,6 +19,7 @@ double matrix_norm(gsl_matrix *input);
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double));
 void random_vector(gsl_vector *vec,  double parameter, double (* func)(const gsl_rng *, double ));
+void random_matrix(gsl_matrix *input, double parameter,double (* func)(const gsl_rng *, double ));
 
 
 #endif // FOO_H_

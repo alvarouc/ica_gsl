@@ -4,6 +4,15 @@
 // #include <stdio.h>
 #include <gsl/gsl_rng.h>
 
+
+void random_matrix(gsl_matrix *input, double parameter,double (* func)(const gsl_rng *, double )){
+
+  gsl_vector *temp = gsl_vector_alloc(input->size1 * input->size2);
+  random_vector(temp, parameter, func);
+  gsl_matrix_view temp_view = gsl_matrix_view_array(temp->data, input->size1, input->size2);
+  gsl_matrix_memcpy(input, &temp_view.matrix);
+}
+
 void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl_rng *, double )){
   //
   const gsl_rng_type * T;

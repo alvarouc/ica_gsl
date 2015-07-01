@@ -40,11 +40,11 @@ void test_random_vector(void){
 
   gsl_vector *vec = gsl_vector_calloc(100000);
   random_vector(vec, 2.0, gsl_ran_gaussian);
-  print_vector_head(vec);
+  // print_vector_head(vec);
 
   double mean = gsl_stats_mean (vec->data, vec->stride, vec->size);
   double sd = gsl_stats_sd (vec->data, vec->stride, vec->size);
-  printf("* Mean %.2e, SD %.2f", mean, sd);
+  // printf("* Mean %.2e, SD %.2f", mean, sd);
   CU_ASSERT(mean < 0.01);
   CU_ASSERT(abs(sd - 2) < 0.01);
 
@@ -170,8 +170,14 @@ void test_infomax(void){
   gsl_matrix *estimated_A = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *estimated_S = gsl_matrix_alloc(NCOMP, NVOX);
 
+  // Random gaussian mixing matrix A
+  gsl_vector *temp = gsl_vector_alloc(NCOMP*NCOMP);
+  random_vector(temp, 1.0, gsl_ran_gaussian);
+  gsl_matrix_view temp_view = gsl_matrix_view_array(temp->data, NCOMP, NCOMP);
+  gsl_matrix_memcpy(true_A, &temp_view.matrix);
+  print_matrix_corner(true_A);
 
-
+  gsl_vector_free(temp);
   gsl_matrix_free(true_A);
   gsl_matrix_free(true_S);
   gsl_matrix_free(true_X);
@@ -224,9 +230,12 @@ int main()
 (NULL == CU_add_test(pSuite_ica,
   "test whitening",
   test_pca_whiten)) ||
-  (NULL == CU_add_test(pSuite_ica,
+(NULL == CU_add_test(pSuite_ica,
     "test mixing matrix update",
-    test_w_update))
+    test_w_update)) ||
+(NULL == CU_add_test(pSuite_ica,
+    "test mixing matrix update",
+    test_infomax))
       )
    {
       CU_cleanup_registry();
