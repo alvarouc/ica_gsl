@@ -106,6 +106,9 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix *unmixed = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *unm_logit = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *temp_I = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *ones = gsl_matrix_alloc(block,1);
+  gsl_matrix_set_all(ones, 1.0);
+
   // gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_vector_view src, dest;
   for (start = 0; start < NVOX; start = start + block) {
@@ -120,6 +123,10 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
       unmixed = gsl_matrix_alloc(NCOMP,block);
       gsl_matrix_free(unm_logit);
       unm_logit = gsl_matrix_alloc(NCOMP,block);
+      gsl_matrix_free(ones);
+      ones = gsl_matrix_alloc(block,1);
+      gsl_matrix_set_all(ones, 1.0);
+
     }
 
     for (i = start; i < start+block; i++) {
@@ -141,11 +148,14 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
     1.0, unm_logit, unmixed, (double)block , temp_I);
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
     // gsl_matrix_memcpy(d_unmixer, unmixer);
-    print_matrix_corner(unmixer);
     gsl_blas_dgemm(CblasNoTrans,CblasTrans,
       *lrate, temp_I, unmixer, 1.0, unmixer);
-    print_matrix_corner(unmixer);
     // Update the bias
+    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *lrate,
+      unm_logit, ones, 1.0,  bias);
+    print_matrix_corner(bias);
+    // check if blows up
+    printf("max = %.2f",gsl_matrix_max(unmixer));
 
   }
 
@@ -157,6 +167,7 @@ void w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
   gsl_matrix_free(unmixed);
   gsl_matrix_free(temp_I);
   gsl_matrix_free(sub_x_white);
+  gsl_matrix_free(ones);
 
 }
 /*
