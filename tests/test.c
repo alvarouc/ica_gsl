@@ -13,16 +13,14 @@ gsl_matrix *input;
 // check if memory was allocated
 
 // unit testing for ICA
-int init_suite_util(void)
-{
+int init_suite_util(void){
   input = gsl_matrix_alloc(NROW, NCOL);
   if (NULL==input) return 1;
   gsl_matrix_set_all(input, 1.0);
   return 0;
 }
 
-int clean_suite_util(void)
-{
+int clean_suite_util(void){
   gsl_matrix_free(input);
   return 0;
 }
@@ -49,20 +47,6 @@ void test_matrix_inv(void){
 
 }
 
-void test_random_matrix(void){
-  gsl_matrix *vec = gsl_matrix_alloc(1000,1000);
-  random_matrix(vec, 2.0, gsl_ran_gaussian);
-
-  gsl_matrix *vec2 = gsl_matrix_alloc(1000,1000);
-  random_matrix(vec2, 2.0, gsl_ran_gaussian);
-  if (gsl_matrix_equal(vec,vec2))
-    CU_FAIL("random matrices are always the same");
-
-  gsl_matrix_free(vec);
-  gsl_matrix_free(vec2);
-
-}
-
 void test_random_vector(void){
 
   gsl_vector *vec = gsl_vector_calloc(100000);
@@ -82,6 +66,20 @@ void test_random_vector(void){
 
   gsl_vector_free(vec);
   gsl_vector_free(vec2);
+
+}
+
+void test_random_matrix(void){
+  gsl_matrix *vec = gsl_matrix_alloc(1000,1000);
+  random_matrix(vec, 2.0, gsl_ran_gaussian);
+
+  gsl_matrix *vec2 = gsl_matrix_alloc(1000,1000);
+  random_matrix(vec2, 2.0, gsl_ran_gaussian);
+  if (gsl_matrix_equal(vec,vec2))
+    CU_FAIL("random matrices are always the same");
+
+  gsl_matrix_free(vec);
+  gsl_matrix_free(vec2);
 
 }
 
@@ -127,6 +125,57 @@ void test_matrix_cov(void){
     }
   }
   CU_ASSERT_EQUAL(n_diferent, 0 );
+}
+
+void test_matrix_norm(void){
+
+  gsl_matrix_set_all(input,1);
+  double norm = matrix_norm(input);
+  // printf("\nMatrix Norm %g\n", norm);
+  CU_ASSERT_EQUAL(norm, NROW*NCOL);
+
+  gsl_matrix_set_all(input,2);
+  norm = matrix_norm(input);
+  // printf("\nMatrix Norm %g\n", norm);
+  CU_ASSERT_EQUAL(norm, NROW*NCOL*4);
+
+}
+
+void test_matrix_sum(void){
+  gsl_matrix_set_all(input, 1);
+  double sum = matrix_sum(input);
+  CU_ASSERT_EQUAL(sum, NROW*NCOL);
+}
+
+void test_matrix_mmul(void){
+
+  double m1[2][2] = {{1,1},{2,2}};
+  double m2[2][2] = {{3,0},{1,1}};
+  double m3[2][2] = {{4,1},{8,2}};
+
+  gsl_matrix *mul = gsl_matrix_alloc(2, 2);
+  gsl_matrix_view m1_view = gsl_matrix_view_array(&m1[0][0],2,2);
+  gsl_matrix_view m2_view = gsl_matrix_view_array(&m2[0][0],2,2);
+  gsl_matrix_view m3_view = gsl_matrix_view_array(&m3[0][0],2,2);
+
+  matrix_mmul(&m1_view.matrix, &m2_view.matrix, mul);
+  if (gsl_matrix_equal(mul, &m3_view.matrix))
+    CU_PASS("matrix dot product works");
+
+  gsl_matrix_free(mul);
+}
+
+void test_matrix_apply_all(void){
+
+  gsl_matrix_set_all(input, 100);
+  matrix_apply_all(input, log10);
+
+  gsl_matrix *test = gsl_matrix_alloc(input->size1, input->size2);
+  gsl_matrix_set_all(test, 2.0);
+  gsl_matrix_sub(test, input);
+  if (matrix_norm(test)>1e-6)
+    CU_FAIL("Not the expected oputput.");
+  gsl_matrix_free(test);
 }
 
 void test_pca_whiten(void)  {
@@ -258,33 +307,18 @@ int main()
 
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite_util,
-  "test of matrix_inv()",
-  test_matrix_inv)) ||
-(NULL == CU_add_test(pSuite_util,
-  "test of random_matrix()",
-  test_random_matrix)) ||
-(NULL == CU_add_test(pSuite_util,
-  "test of random_vector()",
-  test_random_vector)) ||
-(NULL == CU_add_test(pSuite_util,
-  "test of matrix_mean()",
-  test_matrix_mean)) ||
-(NULL == CU_add_test(pSuite_util,
-  "test of matrix_demean()",
-  test_matrix_demean)) ||
-(NULL == CU_add_test(pSuite_util,
-  "test of matrix_cov()",
-  test_matrix_cov)) ||
-(NULL == CU_add_test(pSuite_ica,
-  "test whitening",
-  test_pca_whiten)) ||
-(NULL == CU_add_test(pSuite_ica,
-    "test mixing matrix update",
-    test_w_update)) ||
-(NULL == CU_add_test(pSuite_ica,
-    "test infomax",
-    test_infomax))
+(NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
+(NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||
+(NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_mean()",test_matrix_mean)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_demean()",test_matrix_demean)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_cov()", test_matrix_cov)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_norm()", test_matrix_norm)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_sum()", test_matrix_sum)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_apply_all()", test_matrix_apply_all)) ||
+(NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) ||
+(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update)) ||
+(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))
       )
    {
       CU_cleanup_registry();
