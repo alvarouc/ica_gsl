@@ -182,26 +182,51 @@ void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
-  printf("\nAqui toy\n");
-  gsl_matrix *x_white, *dewhite, *white;
-  size_t NCOMP=10;
-  white = gsl_matrix_alloc(NCOMP, input->size1);
-  dewhite = gsl_matrix_alloc(input->size1, NCOMP);
-  x_white = gsl_matrix_alloc(NCOMP, input->size2);
+  size_t NSUB = 200;
+  size_t NCOMP = 3;
+  size_t NVOX = 10000;
+  gsl_matrix *true_A = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix *true_S = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *true_X = gsl_matrix_alloc(NSUB,NVOX);
+  gsl_matrix *white_x = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *white = gsl_matrix_alloc(NCOMP, NSUB);
+  gsl_matrix *dewhite = gsl_matrix_alloc(NSUB,NCOMP);
 
-  pca_whiten(input, NCOMP, x_white, white, dewhite, 0);
+  // Random gaussian mixing matrix A
+  random_matrix(true_A, 1.0, gsl_ran_gaussian);
+  // Random logistic mixing matrix S
+  random_matrix(true_S, 1.0, gsl_ran_logistic);
+  // X = AS
+  matrix_mmul(true_A, true_S, true_X);
+  // PCA(X)
+  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
   // test if covariance of ouput is identity
   gsl_matrix *cov = gsl_matrix_alloc(NCOMP,NCOMP);
-  matrix_cov(x_white, cov);
+  matrix_cov(white_x, cov);
   gsl_matrix *expected_cov = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(expected_cov);
   gsl_matrix_sub(cov, expected_cov);
   CU_ASSERT(matrix_norm(cov)<1e-6);
+  //test reconstruction error
+  gsl_matrix *reconstructed_x = gsl_matrix_alloc(true_X->size1, true_X->size2);
+  matrix_mmul(dewhite, white_x, reconstructed_x);
 
+  gsl_matrix_sub(reconstructed_x, true_X);
+  double reconstruction_error = matrix_norm(reconstructed_x);
+  if(reconstruction_error>1e-6){
+    CU_FAIL("PCA reconstruction error is too high");
+    printf("\nError : %g\n", reconstruction_error);
+  }
+
+  gsl_matrix_free(reconstructed_x);
   gsl_matrix_free(cov);
   gsl_matrix_free(white);
   gsl_matrix_free(dewhite);
-  gsl_matrix_free(x_white);
+  gsl_matrix_free(white_x);
+  gsl_matrix_free(true_X);
+  gsl_matrix_free(true_S);
+  gsl_matrix_free(true_A);
+
 }
 
 void test_w_update(void){
@@ -308,8 +333,8 @@ int main()
    /* add the tests to the suite */
    if (
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
-(NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||
+(NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_mean()",test_matrix_mean)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_demean()",test_matrix_demean)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_cov()", test_matrix_cov)) ||

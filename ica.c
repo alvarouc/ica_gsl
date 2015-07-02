@@ -19,11 +19,16 @@ double logit(double in){
   return 1.0- 2.0*(1.0/(1.0 + exp(-in)));
 }
 
-void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
-                gsl_matrix *x_white,
-                gsl_matrix *white,
-                gsl_matrix *dewhite,
-                int demean){
+void pca_whiten(
+  gsl_matrix *input,// NOBS x NVOX
+  size_t const NCOMP, //
+  gsl_matrix *x_white, // NCOMP x NVOX
+  gsl_matrix *white, // NCOMP x NCOMP
+  gsl_matrix *dewhite, //NOBS x NVOX
+  int demean){
+
+  size_t NSUB = input->size1;
+
   // demean input matrix
   if (demean){
     matrix_demean(input);
@@ -34,7 +39,6 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   // Set up eigen decomposition
   gsl_vector *eval = gsl_vector_alloc(cov->size1); //eigen values
   gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
-
   /*
   //Compute eigen values with LAPACK
   LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
@@ -52,7 +56,7 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
   // reduce number of components
   //Computing whitening matrix
-  gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , evec->size1, NCOMP);
+  gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , NSUB, NCOMP);
   gsl_matrix_transpose_memcpy(white, &temp.matrix);
   gsl_vector_view v;
   double e;
@@ -65,6 +69,7 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
   }
   // Computing dewhitening matrix
   gsl_matrix_memcpy(dewhite, &temp.matrix);
+
   // evec eval^{1/2}
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
@@ -75,13 +80,17 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
 
   gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,
     white, input, 0.0, x_white);
+
   gsl_matrix_free(evec);
   gsl_vector_free(eval);
 
 }
 
-int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
-  gsl_matrix *bias, double *lrate)
+int w_update(
+  gsl_matrix *unmixer,
+  gsl_matrix *x_white,
+  gsl_matrix *bias,
+  double *lrate)
 {
   int error =0;
   const size_t NVOX = x_white->size2;
