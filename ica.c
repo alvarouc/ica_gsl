@@ -35,7 +35,7 @@ void pca_whiten(
 
   // demean input matrix
   if (demean){
-    matrix_demean(input);
+    // matrix_demean(input);
   }
 
   if (~gsl_matrix_equal(input, test)){
