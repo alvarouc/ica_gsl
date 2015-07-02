@@ -230,36 +230,46 @@ void test_pca_whiten(void)  {
 }
 
 void test_w_update(void){
-  gsl_matrix *unmixer, *x_white, *bias;
-  double rate = 1e-3;
-  double *lrate;
-  lrate = &rate;
-  size_t NCOMP=10;
 
-  gsl_matrix *dewhite, *white;
-  white = gsl_matrix_alloc(NCOMP, input->size1);
-  dewhite = gsl_matrix_alloc(input->size1, NCOMP);
-  x_white = gsl_matrix_alloc(NCOMP, input->size2);
+  size_t NSUB = 200;
+  size_t NCOMP = 3;
+  size_t NVOX = 10000;
+  gsl_matrix *true_A  = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix *true_S  = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *true_X  = gsl_matrix_alloc(NSUB,NVOX);
+  gsl_matrix *white_x = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
+  gsl_matrix *dewhite = gsl_matrix_alloc(NSUB,NCOMP);
+  gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
 
-  pca_whiten(input, NCOMP, x_white, white, dewhite, 0);
+  // Random gaussian mixing matrix A
+  random_matrix(true_A, 1.0, gsl_ran_gaussian);
+  // Random logistic mixing matrix S
+  random_matrix(true_S, 1.0, gsl_ran_logistic);
+  // X = AS
+  matrix_mmul(true_A, true_S, true_X);
+  // PCA(X)
+  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
 
-  unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix_set_identity(unmixer);
-  bias = gsl_matrix_calloc(NCOMP,1);
+  gsl_matrix_set_identity(weights);
   int error = 0;
-  error = w_update(unmixer, x_white, bias, lrate);
+  double lrate = 0.001;
+  error = w_update(weights, white_x, bias, &lrate);
   CU_ASSERT_EQUAL(error, 0);
 
-  *lrate = 1000;
-  error = w_update(unmixer, x_white, bias, lrate);
+  lrate = 1000;
+  error = w_update(weights, white_x, bias, &lrate);
   CU_ASSERT_EQUAL(error, 1);
 
-
-  gsl_matrix_free(x_white);
-  gsl_matrix_free(unmixer);
+  gsl_matrix_free(true_A);
+  gsl_matrix_free(true_S);
+  gsl_matrix_free(true_X);
+  gsl_matrix_free(white_x);
   gsl_matrix_free(white);
-  gsl_matrix_free(bias);
   gsl_matrix_free(dewhite);
+  gsl_matrix_free(weights);
+  gsl_matrix_free(bias);
 }
 
 void test_infomax(void){
