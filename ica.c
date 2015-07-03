@@ -28,19 +28,14 @@ void pca_whiten(
   int demean){
 
   // get input reference
-  gsl_matrix *test = gsl_matrix_alloc(input->size1, input->size2);
-  gsl_matrix_memcpy(test, input);
-
-  size_t NSUB = input->size1;
+    size_t NSUB = input->size1;
 
   // demean input matrix
   if (demean){
-    // matrix_demean(input);
+    matrix_demean(input);
   }
 
-  if (~gsl_matrix_equal(input, test)){
-    printf("ERROR input was modified");
-  }
+
 
   // Convariance Matrix
   gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
@@ -92,7 +87,6 @@ void pca_whiten(
 
   gsl_matrix_free(evec);
   gsl_vector_free(eval);
-  gsl_matrix_free(test);
 
 }
 

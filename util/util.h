@@ -9,6 +9,7 @@
 #include <gsl/gsl_statistics.h>
 
 // operations
+void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B);
 void matrix_inv(gsl_matrix *input, gsl_matrix *output);
 void random_vector(gsl_vector *vec,  double parameter, double (* func)(const gsl_rng *, double ));
 void random_matrix(gsl_matrix *vec, double parameter,double (* func)(const gsl_rng *, double ));

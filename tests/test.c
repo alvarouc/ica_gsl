@@ -34,6 +34,8 @@ int init_suite_ica(void){
   return 0;
 }
 
+
+
 void test_matrix_inv(void){
 
   double m[2][2] = {{10,0},{0,10}};
@@ -82,6 +84,26 @@ void test_random_matrix(void){
   gsl_matrix_free(vec2);
 
 }
+
+void test_matrix_corr(void){
+  size_t NSUB = 1000;
+  size_t NVAR = 10;
+  gsl_matrix *A = gsl_matrix_alloc(NSUB, NVAR);
+  gsl_matrix *test = gsl_matrix_alloc(NVAR,NVAR);
+  gsl_matrix_set_identity(test);
+  random_matrix(A, 1, gsl_ran_gaussian);
+
+  gsl_matrix *C = gsl_matrix_calloc(NVAR,NVAR);
+
+  matrix_cross_corr(C, A, A);
+
+  gsl_matrix_sub(test, C);
+  if ( matrix_norm(test)/NVAR/NVAR > 0.01 )
+    CU_FAIL("correlation matrix is not close to identity!");
+
+  gsl_matrix_free(C);
+}
+
 
 void test_matrix_mean(void){
   // Test the util function matrix_mean
@@ -256,7 +278,7 @@ void test_w_update(void){
   pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
 
   // Check if white_x was modified
-  if(~gsl_matrix_equal(old_true_X, true_X))
+  if(gsl_matrix_equal(old_true_X, true_X)==0)
     CU_FAIL("PCA_WHITEN modified its input!");
   gsl_matrix_free(old_true_X);
 
@@ -300,11 +322,11 @@ void test_infomax(void){
   // X = AS
   matrix_mmul(true_A, true_S, true_X);
   // Run infomax
-  // check is true_X is modified
   gsl_matrix_memcpy(temp, true_X);
   infomax(true_X, estimated_A, estimated_S);
-  if (~gsl_matrix_equal(temp, true_X)){
-    CU_FAIL("Inofmax modified the input !");
+  // check is true_X is modified
+  if (gsl_matrix_equal(temp, true_X)==0){
+    CU_FAIL("Infomax modified the input !");
   }
   matrix_mmul(estimated_A, estimated_S, estimated_X);
 
@@ -358,6 +380,7 @@ int main()
 
    /* add the tests to the suite */
    if (
+(NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) /*||
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||
@@ -367,9 +390,9 @@ int main()
 (NULL == CU_add_test(pSuite_util,"test of matrix_norm()", test_matrix_norm)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_sum()", test_matrix_sum)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_apply_all()", test_matrix_apply_all)) ||
-(NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) //||
-// (NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update)) 
-// (NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))
+(NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) ||
+(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))||
+(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))*/
       )
    {
       CU_cleanup_registry();
