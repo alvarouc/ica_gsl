@@ -380,7 +380,7 @@ int main()
 
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) /*||
+(NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||
@@ -392,7 +392,7 @@ int main()
 (NULL == CU_add_test(pSuite_util,"test of matrix_apply_all()", test_matrix_apply_all)) ||
 (NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) ||
 (NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))||
-(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))*/
+(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))
       )
    {
       CU_cleanup_registry();
