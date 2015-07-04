@@ -16,7 +16,7 @@ double W_STOP = 1e-6;
 size_t MAX_STEP= 512;
 
 double logit(double in){
-  return 1.0- 2.0*(1.0/(1.0 + exp(-in)));
+  return 1.0 - 2.0 * (1.0 / (1.0 + exp(-in)));
 }
 
 void pca_whiten(
@@ -91,12 +91,12 @@ void pca_whiten(
 }
 
 int w_update(
-  gsl_matrix *unmixer,
+  gsl_matrix *weights,
   gsl_matrix *x_white,
   gsl_matrix *bias,
   double *lrate){
 
-  int error =0;
+  int error = 0;
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
@@ -150,27 +150,27 @@ int w_update(
       dest = gsl_matrix_column(sub_x_white, i-start);
       gsl_vector_memcpy(&dest.vector, &src.vector);
     }
-    // Compute unmixed = unmixer . sub_x_white + bias . ib
-    matrix_mmul(unmixer, sub_x_white, unmixed);
+    // Compute unmixed = weights . sub_x_white + bias . ib
+    matrix_mmul(weights, sub_x_white, unmixed);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
       1.0, bias, ib, 1.0, unmixed);
     // Compute 1-2*logit
     gsl_matrix_memcpy(unm_logit, unmixed);
     matrix_apply_all(unm_logit, logit);
-    // unmixer = unmixer + lrate*block*I+(1-2*unmixed)
+    // weights = weights + lrate*block*I+(1-2*unmixed)
     // print_matrix_corner(sub_x_white);
     gsl_matrix_set_identity(temp_I);
     gsl_blas_dgemm(CblasNoTrans,CblasTrans,
     1.0, unm_logit, unmixed, (double)block , temp_I);
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
-    gsl_matrix_memcpy(d_unmixer, unmixer);
+    gsl_matrix_memcpy(d_unmixer, weights);
     gsl_blas_dgemm(CblasNoTrans,CblasTrans,
-      *lrate, temp_I, d_unmixer, 1.0, unmixer);
+      *lrate, temp_I, d_unmixer, 1.0, weights);
     // Update the bias
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *lrate,
       unm_logit, ones, 1.0,  bias);
     // check if blows up
-    max = gsl_matrix_max(unmixer);
+    max = gsl_matrix_max(weights);
     if (max > MAX_W){
 
       if (*lrate<1e-6) {
@@ -217,7 +217,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
-  double lrate = 0.001/log((double)NCOMP);
+  double lrate = 0.005/log((double)NCOMP);
   double change;
   double angle_delta =0;
   size_t step = 0;
@@ -257,7 +257,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         angle_delta *= (180.0 / M_PI);
 
         // OLD_WT_CHANGE <- WEIGHTS - OLD_WEIGHTS
-        gsl_matrix_memcpy(old_wt_change, weights_change);
+        // gsl_matrix_memcpy(old_wt_change, weights_change);
 
       }
 
@@ -273,8 +273,8 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         gsl_matrix_memcpy(old_wt_change, weights_change);
       }
 
-      gsl_matrix_memcpy(weights_change, weights);
-      gsl_matrix_sub(weights_change, old_weights);
+      // gsl_matrix_memcpy(weights_change, weights);
+      // gsl_matrix_sub(weights_change, old_weights);
       if ((verbose && (step % 20)== 0) || change < W_STOP){
         printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
           step, lrate, change, angle_delta);

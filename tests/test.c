@@ -7,6 +7,8 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_randist.h>
 #include "../ica.h"
+#include <gsl/gsl_math.h>
+
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 gsl_matrix *input;
@@ -306,49 +308,49 @@ void test_w_update(void){
 }
 
 void test_infomax(void){
-  size_t NCOMP = 3;
+
+  size_t NSUB = 200;
+  size_t NCOMP = 5;
   size_t NVOX = 10000;
-  gsl_matrix *true_A = gsl_matrix_alloc(NCOMP, NCOMP);
-  gsl_matrix *true_S = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *true_X = gsl_matrix_alloc(NCOMP,NVOX);
-  gsl_matrix *estimated_A = gsl_matrix_alloc(NCOMP, NCOMP);
-  gsl_matrix *estimated_S = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *estimated_X = gsl_matrix_alloc(NCOMP,NVOX);
-  gsl_matrix *temp = gsl_matrix_alloc(NCOMP, NVOX);
+
+  gsl_matrix *estimated_a = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *estimated_s = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *estimated_x = gsl_matrix_alloc(NCOMP,NVOX);
+  gsl_matrix *true_a      = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix *true_s      = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *true_x      = gsl_matrix_alloc(NSUB,NVOX);
+  gsl_matrix *white_x     = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *white       = gsl_matrix_alloc(NCOMP, NSUB);
+  gsl_matrix *dewhite     = gsl_matrix_alloc(NSUB,NCOMP);
+
   // Random gaussian mixing matrix A
-  random_matrix(true_A, 1.0, gsl_ran_gaussian);
+  random_matrix(true_a, 1.0, gsl_ran_gaussian);
   // Random logistic mixing matrix S
-  random_matrix(true_S, 1.0, gsl_ran_logistic);
+  random_matrix(true_s, 1.0, gsl_ran_logistic);
+  matrix_apply_all(true_s, gsl_pow_3);
+
   // X = AS
-  matrix_mmul(true_A, true_S, true_X);
-  // Run infomax
-  gsl_matrix_memcpy(temp, true_X);
-  infomax(true_X, estimated_A, estimated_S);
-  // check is true_X is modified
-  if (gsl_matrix_equal(temp, true_X)==0){
-    CU_FAIL("Infomax modified the input !");
-  }
-  matrix_mmul(estimated_A, estimated_S, estimated_X);
-
-  gsl_matrix_sub(true_X, estimated_X);
-  if (matrix_norm(true_X)> 1.0e-6){
-    printf("\nReconstruction error %.2e",matrix_norm(true_X));
-    CU_FAIL("Matrix reconstruction is too high");
-  }
-
-  printf("\n\nTRUE A");
-  print_matrix_corner(true_A);
-  printf("\nESTIMATED A");
-  print_matrix_corner(estimated_A);
+  matrix_mmul(true_a, true_s, true_x);
+  // PCA(X)
+  pca_whiten(true_x, NCOMP, white_x, white, dewhite, 0);
+  // Run infomax on whitened data
+  infomax(white_x, estimated_a, estimated_s);
+  // Test accuracy of source estimation
+  gsl_matrix *cs = gsl_matrix_alloc(NCOMP, NCOMP);
+  matrix_cross_corr_row(cs, estimated_s, true_s);
+  printf("\nSource Accuracy");
+  print_matrix_corner(cs);
 
   //Clean
-  gsl_matrix_free(true_A);
-  gsl_matrix_free(true_S);
-  gsl_matrix_free(true_X);
-  gsl_matrix_free(estimated_A);
-  gsl_matrix_free(estimated_S);
-  gsl_matrix_free(estimated_X);
-  gsl_matrix_free(temp);
+  gsl_matrix_free(true_a);
+  gsl_matrix_free(true_s);
+  gsl_matrix_free(true_x);
+  gsl_matrix_free(estimated_a);
+  gsl_matrix_free(estimated_s);
+  gsl_matrix_free(estimated_x);
+  gsl_matrix_free(white);
+  gsl_matrix_free(dewhite);
+  gsl_matrix_free(white_x);
 }
 
 

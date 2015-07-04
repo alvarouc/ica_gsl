@@ -5,6 +5,28 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_linalg.h>
 
+void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
+  /* NOTE: Paralelize the inner loop
+  do instead
+  for (i = 0; i < A->size2; i++) {
+    for (j = i; j < B->size2; j++) {
+  this reduces number of operations to half
+  */
+  size_t i,j;
+  gsl_vector_view a, b;
+  double c;
+  for (i = 0; i < A->size1; i++) {
+    for (j = 0; j < B->size1; j++) {
+      a = gsl_matrix_row(A, i);
+      b = gsl_matrix_row(B, j);
+      c = gsl_stats_correlation(a.vector.data, a.vector.stride, b.vector.data, b.vector.stride, a.vector.size);
+      gsl_matrix_set(C, i,j, c);
+    }
+  }
+
+
+}
+
 void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   /* NOTE: Paralelize the inner loop
   do instead
@@ -151,7 +173,7 @@ void print_matrix_corner(gsl_matrix *input){
 
   for (i = 0; i < NROW; i++){
     for (j = 0;j < NCOL; j++) {
-      printf("%g ", gsl_matrix_get(input,i,j));
+      printf("%5.2f ", gsl_matrix_get(input,i,j));
     }
     printf("\n");
   }
