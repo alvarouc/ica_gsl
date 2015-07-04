@@ -314,6 +314,7 @@ void test_infomax(void){
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *es_dewh_a   = gsl_matrix_alloc(NSUB, NCOMP);
   gsl_matrix *estimated_s = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix *estimated_x = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix *true_a      = gsl_matrix_alloc(NSUB, NCOMP);
@@ -335,10 +336,16 @@ void test_infomax(void){
   pca_whiten(true_x, NCOMP, white_x, white, dewhite, 0);
   // Run infomax on whitened data
   infomax(white_x, estimated_a, estimated_s);
+  // dewhite estimated A matrix
+  matrix_mmul(dewhite, estimated_a, es_dewh_a);
   // Test accuracy of source estimation
   gsl_matrix *cs = gsl_matrix_alloc(NCOMP, NCOMP);
   matrix_cross_corr_row(cs, estimated_s, true_s);
   printf("\nSource Accuracy");
+  print_matrix_corner(cs);
+  // Test accuracy of loading estimation
+  matrix_cross_corr(cs, es_dewh_a, true_a);
+  printf("\nLoading Accuracy");
   print_matrix_corner(cs);
 
   //Clean
@@ -351,6 +358,8 @@ void test_infomax(void){
   gsl_matrix_free(white);
   gsl_matrix_free(dewhite);
   gsl_matrix_free(white_x);
+  gsl_matrix_free(cs);
+  gsl_matrix_free(es_dewh_a);
 }
 
 
