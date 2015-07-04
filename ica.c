@@ -175,7 +175,7 @@ int w_update(
     max = gsl_matrix_max(weights);
     if (max > MAX_W){
 
-      if (*lrate<1e-6) {
+      if (lrate<1e-6) {
         printf("\nERROR: Weight matrix may not be invertible\n");
         error = 2;
         break;
