@@ -209,16 +209,15 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   int verbose = 1; //true
 
   size_t NCOMP = x_white->size1;
-  gsl_matrix *weights = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *bias = gsl_matrix_calloc(NCOMP, 1);
+  gsl_matrix *weights        = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *old_weights    = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *bias           = gsl_matrix_calloc(NCOMP, 1);
   gsl_matrix *weights_change = gsl_matrix_calloc(NCOMP,NCOMP);
-  gsl_matrix *old_wt_change = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *temp_change = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *old_wt_change  = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
-  double lrate = 0.005/log((double)NCOMP);
-  // double change = 100.0, old_change = 100.0,
+  double lrate = 0.001/log((double)NCOMP);
   double change;
   double angle_delta =0;
   size_t step = 0;
@@ -244,9 +243,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
       }
     }
     else if (error==0){
-      gsl_matrix_memcpy(old_wt_change, weights);
-      gsl_matrix_sub(old_wt_change, old_weights);
-
+      // WEIGHTS_CHANGE <- WEIGHTS - OLD_WEIGHTS
       gsl_matrix_memcpy(weights_change, weights);
       gsl_matrix_sub(weights_change, old_weights);
       change = matrix_norm(weights_change);
@@ -258,6 +255,9 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         angle_delta = acos(matrix_sum(temp_change) /
           sqrt(matrix_norm(weights_change)*matrix_norm(old_wt_change)));
         angle_delta *= (180.0 / M_PI);
+
+        // OLD_WT_CHANGE <- WEIGHTS - OLD_WEIGHTS
+        gsl_matrix_memcpy(old_wt_change, weights_change);
 
       }
 
