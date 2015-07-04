@@ -110,18 +110,18 @@ int w_update(
   }
   gsl_rng * r;
   const gsl_rng_type * T;
-  // gsl_rng_env_setup();
+  gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
   gsl_rng_set (r, rand());
   gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
 
   size_t start;
-  gsl_matrix *sub_x_white =gsl_matrix_alloc(NCOMP, block);
-  gsl_matrix *unmixed = gsl_matrix_alloc(NCOMP,block);
-  gsl_matrix *unm_logit = gsl_matrix_alloc(NCOMP,block);
-  gsl_matrix *temp_I = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix *ones = gsl_matrix_alloc(block,1);
+  gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
+  gsl_matrix *unmixed     = gsl_matrix_alloc(NCOMP,block);
+  gsl_matrix *unm_logit   = gsl_matrix_alloc(NCOMP,block);
+  gsl_matrix *temp_I      = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *ones        = gsl_matrix_alloc(block,1);
   gsl_matrix_set_all(ones, 1.0);
   double max;
 
@@ -224,7 +224,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   int error = 0;
   while(step < MAX_STEP){
     error = w_update(weights, x_white, bias, &lrate);
-    if (error==1){
+    if (error==1 || error==2){
       // It blowed up! RESTART!
       step = 0;
       // change = 1;
@@ -255,10 +255,6 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         angle_delta = acos(matrix_sum(temp_change) /
           sqrt(matrix_norm(weights_change)*matrix_norm(old_wt_change)));
         angle_delta *= (180.0 / M_PI);
-
-        // OLD_WT_CHANGE <- WEIGHTS - OLD_WEIGHTS
-        // gsl_matrix_memcpy(old_wt_change, weights_change);
-
       }
 
       if (angle_delta > 60){
@@ -273,8 +269,6 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         gsl_matrix_memcpy(old_wt_change, weights_change);
       }
 
-      // gsl_matrix_memcpy(weights_change, weights);
-      // gsl_matrix_sub(weights_change, old_weights);
       if ((verbose && (step % 20)== 0) || change < W_STOP){
         printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
           step, lrate, change, angle_delta);
