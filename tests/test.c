@@ -333,7 +333,7 @@ void test_infomax(void){
   // X = AS
   matrix_mmul(true_a, true_s, true_x);
   // PCA(X)
-  pca_whiten(true_x, NCOMP, white_x, white, dewhite, 0);
+  pca_whiten(true_x, NCOMP, white_x, white, dewhite, 1);
   // Run infomax on whitened data
   infomax(white_x, estimated_a, estimated_s);
   // dewhite estimated A matrix
