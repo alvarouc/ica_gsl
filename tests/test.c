@@ -288,13 +288,13 @@ void test_w_update(void){
   int error = 0;
   double lrate = 0.001;
   gsl_matrix_memcpy(old_weights, weights);
-  error = w_update(weights, white_x, bias, &lrate);
+  error = w_update(weights, white_x, bias, lrate);
   CU_ASSERT_EQUAL(error, 0);
   if (gsl_matrix_equal(old_weights, weights))
     CU_FAIL("Weights have not been updated");
 
   lrate = 1000;
-  error = w_update(weights, white_x, bias, &lrate);
+  error = w_update(weights, white_x, bias, lrate);
   CU_ASSERT_EQUAL(error, 1);
 
   gsl_matrix_free(true_A);

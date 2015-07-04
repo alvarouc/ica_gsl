@@ -94,7 +94,7 @@ int w_update(
   gsl_matrix *weights,
   gsl_matrix *x_white,
   gsl_matrix *bias,
-  double *lrate){
+  double lrate){
 
   int error = 0;
   const size_t NVOX = x_white->size2;
@@ -144,7 +144,7 @@ int w_update(
       gsl_matrix_set_all(ones, 1.0);
 
     }
-    // xwhite[:, permute[start:start+block]]
+    // sub_x_white = xwhite[:, permute[start:start+block]]
     for (i = start; i < start+block; i++) {
       src = gsl_matrix_column(x_white, gsl_vector_get(permute, i));
       dest = gsl_matrix_column(sub_x_white, i-start);
@@ -157,18 +157,20 @@ int w_update(
     // Compute 1-2*logit
     gsl_matrix_memcpy(unm_logit, unmixed);
     matrix_apply_all(unm_logit, logit);
-    // weights = weights + lrate*block*I+(1-2*unmixed)
-    // print_matrix_corner(sub_x_white);
-    gsl_matrix_set_identity(temp_I);
-    gsl_blas_dgemm(CblasNoTrans,CblasTrans,
-    1.0, unm_logit, unmixed, (double)block , temp_I);
+    // weights = weights + lrate*block*I+(unmixed.T)
+    gsl_matrix_set_identity(temp_I); // temp_I = I
+    gsl_blas_dgemm( CblasNoTrans,CblasTrans,
+                    1.0, unm_logit, unmixed,
+                    (double)block , temp_I);// temp_I = block*temp_I +unm_logit*unmixed.T
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
     gsl_matrix_memcpy(d_unmixer, weights);
-    gsl_blas_dgemm(CblasNoTrans,CblasTrans,
-      *lrate, temp_I, d_unmixer, 1.0, weights);
+    gsl_blas_dgemm( CblasNoTrans,CblasNoTrans,
+                    lrate, temp_I, d_unmixer,
+                    1.0, weights);// weights = weights + lrate*temp_I*weights
     // Update the bias
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, *lrate,
-      unm_logit, ones, 1.0,  bias);
+    gsl_blas_dgemm( CblasNoTrans, CblasNoTrans,
+                    lrate, unm_logit, ones,
+                    1.0,  bias);
     // check if blows up
     max = gsl_matrix_max(weights);
     if (max > MAX_W){
@@ -193,6 +195,7 @@ int w_update(
   gsl_matrix_free(temp_I);
   gsl_matrix_free(sub_x_white);
   gsl_matrix_free(ones);
+  gsl_matrix_free(unm_logit);
   return(error);
 
 }
@@ -223,7 +226,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   size_t step = 0;
   int error = 0;
   while(step < MAX_STEP){
-    error = w_update(weights, x_white, bias, &lrate);
+    error = w_update(weights, x_white, bias, lrate);
     if (error==1 || error==2){
       // It blowed up! RESTART!
       step = 0;

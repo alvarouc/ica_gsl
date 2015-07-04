@@ -5,6 +5,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_linalg.h>
 
+// void sort_corr() 
+
 void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   /* NOTE: Paralelize the inner loop
   do instead
