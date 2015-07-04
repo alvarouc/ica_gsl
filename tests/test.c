@@ -36,7 +36,10 @@ int init_suite_ica(void){
   return 0;
 }
 
+void test_sort_corr(void){
 
+  CU_FAIL("Complete the test for sort of correlation matrix");
+}
 
 void test_matrix_inv(void){
 
@@ -310,7 +313,7 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 200;
-  size_t NCOMP = 3;
+  size_t NCOMP = 20;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NCOMP, NCOMP);

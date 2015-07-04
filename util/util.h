@@ -21,6 +21,7 @@ double matrix_norm(gsl_matrix *input);
 double matrix_sum(gsl_matrix *input);
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double));
+void sort_corr(gsl_matrix *C, gsl_vector *index);
 
 // matrix print
 void print_matrix_corner(gsl_matrix *input);
