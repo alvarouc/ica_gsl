@@ -310,8 +310,8 @@ void test_w_update(void){
 
 void test_infomax(void){
 
-  size_t NSUB = 200;
-  size_t NCOMP = 6;
+  size_t NSUB = 400;
+  size_t NCOMP = 10;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
@@ -337,10 +337,23 @@ void test_infomax(void){
   matrix_cross_corr_row(cs, true_s, estimated_s);
   printf("\nSource estimation accuracy");
   print_matrix_corner(cs);
+  matrix_apply_all(cs, absolute);
+  gsl_vector_view diag = gsl_matrix_diagonal(cs);
+  double avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
+  printf("\n Average Accuracy: %.3f", avg);
+  if(avg < 0.7){
+    CU_FAIL("average source estiamtion accuracy too low.");
+  }
   matrix_cross_corr(cs, true_a, estimated_a);
   printf("\nLoading estimation accuracy");
   print_matrix_corner(cs);
-
+  matrix_apply_all(cs, absolute);
+  diag = gsl_matrix_diagonal(cs);
+  avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
+  printf("\n Average Accuracy: %.3f", avg);
+  if(avg < 0.7){
+    CU_FAIL("average source estiamtion accuracy too low.");
+  }
   //Clean
   gsl_matrix_free(true_a);
   gsl_matrix_free(true_s);

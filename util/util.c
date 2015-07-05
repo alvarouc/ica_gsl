@@ -91,8 +91,7 @@ void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   /* NOTE: Paralelize the inner loop
   do instead
   for (i = 0; i < A->size2; i++) {
-    for (j = i; j < B->size2; j++) {
-  this reduces number of operations to half
+    for (j = 0; j < B->size2; j++) {
   */
   size_t i,j;
   gsl_vector_view a, b;
@@ -150,8 +149,8 @@ void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl
 
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;
-  for (j = 0; j < input->size2; j++) {
-    for (i = 0; i < input->size1; i++) {
+  for (i = 0; i < input->size1; i++) {
+    for (j = 0; j < input->size2; j++) {
       gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
     }
   }
