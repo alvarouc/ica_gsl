@@ -36,9 +36,56 @@ int init_suite_ica(void){
   return 0;
 }
 
-void test_sort_corr(void){
+void test_sort_matrix_col(void){
+  size_t NCOMP = 4;
+  double C[4][4] = {{0,1,0,0},
+                    {1,0,0,0},
+                    {0,0,0,1},
+                    {0,0,1,0}};
+  gsl_matrix_view cc = gsl_matrix_view_array(&C[0][0], NCOMP, NCOMP);
+  double index[4] = {1,0,3,2};
+  gsl_vector_view ix = gsl_vector_view_array(&index[0],4);
+  sort_matrix_col(&cc.matrix, &ix.vector);
+  // print_matrix_corner(&cc.matrix);
 
-  CU_FAIL("Complete the test for sort of correlation matrix");
+  gsl_matrix *test = gsl_matrix_alloc(4,4);
+  gsl_matrix_set_identity(test);
+
+  if (gsl_matrix_equal(test, &cc.matrix)==0){
+    CU_FAIL("sorting matrix by index fails.");
+  }
+
+  gsl_matrix_free(test);
+
+}
+
+void test_sort_corr(void){
+  size_t NCOMP = 4;
+  double C[4][4] = {{0,1,0,0},
+                    {1,0,0,0},
+                    {0,0,0,1},
+                    {0,0,1,0}};
+  gsl_matrix_view cc = gsl_matrix_view_array(&C[0][0], NCOMP, NCOMP);
+  gsl_vector *index = gsl_vector_alloc(NCOMP);
+  // print_matrix_corner(&cc.matrix);
+  sort_corr(&cc.matrix, index);
+  // print_matrix_corner(&cc.matrix);
+  gsl_matrix *temp = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix_set_identity(temp);
+  if (gsl_matrix_equal(temp, &cc.matrix)==0)
+    CU_FAIL("correlation matrix not sorted");
+  gsl_vector *temp_vec = gsl_vector_alloc(NCOMP);
+  gsl_vector_set(temp_vec, 0, 1);
+  gsl_vector_set(temp_vec, 1, 0);
+  gsl_vector_set(temp_vec, 2, 3);
+  gsl_vector_set(temp_vec, 3, 2);
+
+  if (gsl_vector_equal(temp_vec, index)==0)
+    CU_FAIL("index is not correct");
+
+  gsl_vector_free(index);
+  gsl_matrix_free(temp);
+
 }
 
 void test_matrix_inv(void){
@@ -313,42 +360,34 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 200;
-  size_t NCOMP = 20;
+  size_t NCOMP = 4;
   size_t NVOX = 10000;
 
-  gsl_matrix *estimated_a = gsl_matrix_alloc(NCOMP, NCOMP);
-  gsl_matrix *es_dewh_a   = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
   gsl_matrix *estimated_s = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *estimated_x = gsl_matrix_alloc(NCOMP,NVOX);
-  gsl_matrix *true_a      = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix *estimated_x = gsl_matrix_alloc(NSUB,  NVOX);
+  gsl_matrix *true_a      = gsl_matrix_alloc(NSUB,  NCOMP);
   gsl_matrix *true_s      = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *true_x      = gsl_matrix_alloc(NSUB,NVOX);
-  gsl_matrix *white_x     = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *white       = gsl_matrix_alloc(NCOMP, NSUB);
-  gsl_matrix *dewhite     = gsl_matrix_alloc(NSUB,NCOMP);
+  gsl_matrix *true_x      = gsl_matrix_alloc(NSUB,  NVOX);
+  gsl_matrix *cs          = gsl_matrix_alloc(NCOMP, NCOMP);
 
   // Random gaussian mixing matrix A
   random_matrix(true_a, 1.0, gsl_ran_gaussian);
   // Random logistic mixing matrix S
   random_matrix(true_s, 1.0, gsl_ran_logistic);
-  matrix_apply_all(true_s, gsl_pow_3);
-
+  // matrix_apply_all(true_s, gsl_pow_3);
   // X = AS
   matrix_mmul(true_a, true_s, true_x);
-  // PCA(X)
-  pca_whiten(true_x, NCOMP, white_x, white, dewhite, 1);
-  // Run infomax on whitened data
-  infomax(white_x, estimated_a, estimated_s);
-  // dewhite estimated A matrix
-  matrix_mmul(dewhite, estimated_a, es_dewh_a);
-  // Test accuracy of source estimation
-  gsl_matrix *cs = gsl_matrix_alloc(NCOMP, NCOMP);
-  matrix_cross_corr_row(cs, estimated_s, true_s);
-  printf("\nSource Accuracy");
+  // A,S <- ICA(X, NCOMP)
+  ica(estimated_a, estimated_s, true_x);
+  // Match by correlation
+  ica_match_gt(true_a, true_s, estimated_a, estimated_s);
+
+  matrix_cross_corr_row(cs, true_s, estimated_s);
+  printf("\nSource estimation accuracy");
   print_matrix_corner(cs);
-  // Test accuracy of loading estimation
-  matrix_cross_corr(cs, es_dewh_a, true_a);
-  printf("\nLoading Accuracy");
+  matrix_cross_corr(cs, true_a, estimated_a);
+  printf("\nLoading estimation accuracy");
   print_matrix_corner(cs);
 
   //Clean
@@ -358,11 +397,7 @@ void test_infomax(void){
   gsl_matrix_free(estimated_a);
   gsl_matrix_free(estimated_s);
   gsl_matrix_free(estimated_x);
-  gsl_matrix_free(white);
-  gsl_matrix_free(dewhite);
-  gsl_matrix_free(white_x);
   gsl_matrix_free(cs);
-  gsl_matrix_free(es_dewh_a);
 }
 
 
@@ -394,6 +429,8 @@ int main()
 
    /* add the tests to the suite */
    if (
+(NULL == CU_add_test(pSuite_util,"test of sort_matrix_col()", test_sort_matrix_col)) ||
+(NULL == CU_add_test(pSuite_util,"test of sort_corr()",test_sort_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||

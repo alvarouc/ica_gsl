@@ -10,3 +10,4 @@ int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
               gsl_matrix *bias1, double lrate);
 
 void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S);
+void ica(gsl_matrix *mixing, gsl_matrix *sources, gsl_matrix *data);

@@ -294,6 +294,29 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   gsl_matrix_free(bias);
 }
 
+void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
+
+  const size_t NCOMP = A->size2;
+  const size_t NSUB = X->size1;
+  const size_t NVOX = X->size2;
+  gsl_matrix *white_A = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *white_X = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
+  gsl_matrix *dewhite = gsl_matrix_alloc(NSUB, NCOMP);
+  printf("\nPCA decomposition ...");
+  pca_whiten(X, NCOMP, white_X, white, dewhite, 1);
+  printf("Done.");
+  printf("\nINFOMAX ...");
+  infomax(white_X, white_A, S);
+  printf("Done");
+  matrix_mmul(dewhite, white_A, A);
+
+  gsl_matrix_free(white_A);
+  gsl_matrix_free(white_X);
+  gsl_matrix_free(white);
+  gsl_matrix_free(dewhite);
+
+}
 
 /*
 void infomax1(double *x_white){

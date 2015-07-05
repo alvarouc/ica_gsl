@@ -5,8 +5,103 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_linalg.h>
 
+double absolute(double value) {
+  if (value < 0) {
+    return -value;
+  }
+  else {
+    return value;
+  }
+}
+
+void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
+  gsl_matrix *esti_a, gsl_matrix *esti_s){
+  /* Sort estimated loading and source matrices to match
+  ground truth*/
+  const size_t NCOMP = true_s->size1;
+  const size_t NVOX = true_s->size2;
+  const size_t NSUB = true_a->size1;
+
+  gsl_matrix *cs = gsl_matrix_alloc(NCOMP, NCOMP);
+  // cs <- CORR(S, S')
+  matrix_cross_corr_row(cs, true_s, esti_s);
+  matrix_apply_all(cs, absolute);
+  // index <- cs.max(axis = 1 );
+  size_t i;
+  gsl_vector_view a_row, b_row;
+  gsl_vector *index = gsl_vector_alloc(NCOMP);
+  for (i = 0; i < NCOMP; i++) {
+    a_row = gsl_matrix_row(cs, i);
+    gsl_vector_set(index, i,
+      gsl_stats_max_index(a_row.vector.data,
+                          a_row.vector.stride,
+                          a_row.vector.size));
+  }
+  // Sort estimated sources
+  // S' <- S'[index,:]
+  gsl_matrix *temp = gsl_matrix_alloc(NCOMP, NVOX);
+  gsl_matrix_memcpy(temp, esti_s);
+  for (i = 0; i < NCOMP; i++) {
+    a_row = gsl_matrix_row(temp, i);
+    b_row = gsl_matrix_row(esti_s, gsl_vector_get(index, i));
+    gsl_vector_memcpy(&b_row.vector, &a_row.vector);
+  }
+  gsl_matrix_free(temp);
+  // Sort estimated loadings
+  // A' <- A'[:,index]
+  temp = gsl_matrix_alloc(NSUB, NCOMP);
+  gsl_matrix_memcpy(temp, esti_a);
+
+  for (i = 0; i < NCOMP; i++) {
+    a_row = gsl_matrix_column(temp, i);
+    b_row = gsl_matrix_column(esti_a, gsl_vector_get(index, i));
+
+    gsl_vector_memcpy(&b_row.vector, &a_row.vector);
+  }
+
+  gsl_matrix_free(temp);
+  gsl_matrix_free(cs);
+  gsl_vector_free(index);
+
+}
+
+void sort_matrix_col(gsl_matrix *C, gsl_vector *index){
+
+  gsl_vector_view col, col_temp;
+  gsl_matrix *temp = gsl_matrix_alloc(C->size1, C->size2);
+  gsl_matrix_memcpy(temp, C);
+  size_t i;
+  for(i=0; i<C->size2; i++){
+    col_temp = gsl_matrix_column(temp, i);
+    col = gsl_matrix_column(C,gsl_vector_get(index, i));
+    gsl_vector_memcpy(&col.vector, &col_temp.vector);
+  }
+
+  gsl_matrix_free(temp);
+
+}
+
 void sort_corr(gsl_matrix *C, gsl_vector *index){
-  
+  /*
+  Sort a correlation matrix columns so that it has its column maximum
+  at the diagonal
+  */
+  matrix_apply_all(C, absolute);
+  gsl_matrix *temp = gsl_matrix_alloc(C->size1, C->size2);
+  size_t col, ix;
+  gsl_vector_view a_col, temp_col;
+  for(col=0; col<C->size2; col++){
+    a_col = gsl_matrix_column(C,col);
+    ix = gsl_stats_max_index( a_col.vector.data,
+                              a_col.vector.stride,
+                              a_col.vector.size);
+    gsl_vector_set(index, col, ix);
+    temp_col = gsl_matrix_column(temp, ix);
+    gsl_vector_memcpy(&temp_col.vector, &a_col.vector);
+  }
+
+  gsl_matrix_memcpy(C, temp);
+
 }
 
 void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
