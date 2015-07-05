@@ -360,7 +360,7 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 200;
-  size_t NCOMP = 4;
+  size_t NCOMP = 10;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
