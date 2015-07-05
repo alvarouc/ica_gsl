@@ -158,7 +158,6 @@ void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
 
 }
 
-
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C){
   //  Computes C = A x B
 

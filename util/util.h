@@ -23,6 +23,7 @@ void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double));
 void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   gsl_matrix *esti_a, gsl_matrix *esti_s);
+double absolute(double value);
 // matrix print
 void print_matrix_corner(gsl_matrix *input);
 void print_vector_head(gsl_vector *input);
