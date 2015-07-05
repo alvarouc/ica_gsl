@@ -36,58 +36,6 @@ int init_suite_ica(void){
   return 0;
 }
 
-void test_sort_matrix_col(void){
-  size_t NCOMP = 4;
-  double C[4][4] = {{0,1,0,0},
-                    {1,0,0,0},
-                    {0,0,0,1},
-                    {0,0,1,0}};
-  gsl_matrix_view cc = gsl_matrix_view_array(&C[0][0], NCOMP, NCOMP);
-  double index[4] = {1,0,3,2};
-  gsl_vector_view ix = gsl_vector_view_array(&index[0],4);
-  sort_matrix_col(&cc.matrix, &ix.vector);
-  // print_matrix_corner(&cc.matrix);
-
-  gsl_matrix *test = gsl_matrix_alloc(4,4);
-  gsl_matrix_set_identity(test);
-
-  if (gsl_matrix_equal(test, &cc.matrix)==0){
-    CU_FAIL("sorting matrix by index fails.");
-  }
-
-  gsl_matrix_free(test);
-
-}
-
-void test_sort_corr(void){
-  size_t NCOMP = 4;
-  double C[4][4] = {{0,1,0,0},
-                    {1,0,0,0},
-                    {0,0,0,1},
-                    {0,0,1,0}};
-  gsl_matrix_view cc = gsl_matrix_view_array(&C[0][0], NCOMP, NCOMP);
-  gsl_vector *index = gsl_vector_alloc(NCOMP);
-  // print_matrix_corner(&cc.matrix);
-  sort_corr(&cc.matrix, index);
-  // print_matrix_corner(&cc.matrix);
-  gsl_matrix *temp = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_matrix_set_identity(temp);
-  if (gsl_matrix_equal(temp, &cc.matrix)==0)
-    CU_FAIL("correlation matrix not sorted");
-  gsl_vector *temp_vec = gsl_vector_alloc(NCOMP);
-  gsl_vector_set(temp_vec, 0, 1);
-  gsl_vector_set(temp_vec, 1, 0);
-  gsl_vector_set(temp_vec, 2, 3);
-  gsl_vector_set(temp_vec, 3, 2);
-
-  if (gsl_vector_equal(temp_vec, index)==0)
-    CU_FAIL("index is not correct");
-
-  gsl_vector_free(index);
-  gsl_matrix_free(temp);
-
-}
-
 void test_matrix_inv(void){
 
   double m[2][2] = {{10,0},{0,10}};
@@ -161,15 +109,15 @@ void test_matrix_mean(void){
   // Test the util function matrix_mean
 
   // print_matrix_corner(input);
-
+  gsl_matrix_set_all(input, 1);
   // Compute column mean
-  gsl_vector *mean = matrix_mean(input);
-  CU_ASSERT_PTR_NOT_NULL(mean);
+  gsl_vector *mean = gsl_vector_alloc(NCOL);
+  matrix_mean(mean, input);
   // Compare to the expected mean
   gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
   gsl_vector_set_all(expected_mean, 1.0);
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
-
+  gsl_vector_free(mean);
   // print_vector_head(mean);
 }
 
@@ -177,13 +125,16 @@ void test_matrix_demean(void){
   // Test the util function matrix_demean
 
   matrix_demean(input);
-  gsl_vector *mean = matrix_mean(input);
+  gsl_vector *mean = gsl_vector_alloc(NCOL);
+  matrix_mean(mean, input);
 
   // Compare mean to the expected mean
   gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
   gsl_vector_set_all(expected_mean, 0.0);
 
   CU_ASSERT(gsl_vector_equal(mean, expected_mean));
+  gsl_vector_free(mean);
+  gsl_vector_free(expected_mean);
 }
 
 void test_matrix_cov(void){
@@ -360,7 +311,7 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 200;
-  size_t NCOMP = 10;
+  size_t NCOMP = 3;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
@@ -429,8 +380,6 @@ int main()
 
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite_util,"test of sort_matrix_col()", test_sort_matrix_col)) ||
-(NULL == CU_add_test(pSuite_util,"test of sort_corr()",test_sort_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||

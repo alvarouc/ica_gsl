@@ -65,45 +65,6 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
 
 }
 
-void sort_matrix_col(gsl_matrix *C, gsl_vector *index){
-
-  gsl_vector_view col, col_temp;
-  gsl_matrix *temp = gsl_matrix_alloc(C->size1, C->size2);
-  gsl_matrix_memcpy(temp, C);
-  size_t i;
-  for(i=0; i<C->size2; i++){
-    col_temp = gsl_matrix_column(temp, i);
-    col = gsl_matrix_column(C,gsl_vector_get(index, i));
-    gsl_vector_memcpy(&col.vector, &col_temp.vector);
-  }
-
-  gsl_matrix_free(temp);
-
-}
-
-void sort_corr(gsl_matrix *C, gsl_vector *index){
-  /*
-  Sort a correlation matrix columns so that it has its column maximum
-  at the diagonal
-  */
-  matrix_apply_all(C, absolute);
-  gsl_matrix *temp = gsl_matrix_alloc(C->size1, C->size2);
-  size_t col, ix;
-  gsl_vector_view a_col, temp_col;
-  for(col=0; col<C->size2; col++){
-    a_col = gsl_matrix_column(C,col);
-    ix = gsl_stats_max_index( a_col.vector.data,
-                              a_col.vector.stride,
-                              a_col.vector.size);
-    gsl_vector_set(index, col, ix);
-    temp_col = gsl_matrix_column(temp, ix);
-    gsl_vector_memcpy(&temp_col.vector, &a_col.vector);
-  }
-
-  gsl_matrix_memcpy(C, temp);
-
-}
-
 void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   /* NOTE: Paralelize the inner loop
   do instead
@@ -234,7 +195,8 @@ double matrix_sum(gsl_matrix *input){
 
 void matrix_demean(gsl_matrix *input){
 
-  gsl_vector *mean = matrix_mean(input);
+  gsl_vector *mean = gsl_vector_alloc(input->size2);
+  matrix_mean(mean, input);
 
   size_t NCOL = input->size2;
   size_t i;
@@ -245,19 +207,16 @@ void matrix_demean(gsl_matrix *input){
   }
 }
 
-gsl_vector *matrix_mean(gsl_matrix *input){
+void matrix_mean(gsl_vector *mean, gsl_matrix *input){
   //  Function to extract the column mean of a gsl matrix
   size_t col;
   size_t NCOL = input->size2;
   gsl_vector_view a_col;
-  gsl_vector *mean = gsl_vector_alloc(NCOL) ;
   for (col = 0; col < NCOL; col++) {
     a_col = gsl_matrix_column(input, col);
     gsl_vector_set(mean, col, gsl_stats_mean(a_col.vector.data,
     a_col.vector.stride, a_col.vector.size));
   }
-
-  return mean;
 
 }
 
