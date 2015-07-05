@@ -311,7 +311,7 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 200;
-  size_t NCOMP = 3;
+  size_t NCOMP = 6;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);

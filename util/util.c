@@ -42,9 +42,9 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   gsl_matrix *temp = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix_memcpy(temp, esti_s);
   for (i = 0; i < NCOMP; i++) {
-    a_row = gsl_matrix_row(temp, i);
-    b_row = gsl_matrix_row(esti_s, gsl_vector_get(index, i));
-    gsl_vector_memcpy(&b_row.vector, &a_row.vector);
+    a_row = gsl_matrix_row(esti_s, i);
+    b_row = gsl_matrix_row(temp, gsl_vector_get(index, i));
+    gsl_vector_memcpy(&a_row.vector, &b_row.vector);
   }
   gsl_matrix_free(temp);
   // Sort estimated loadings
@@ -53,10 +53,10 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   gsl_matrix_memcpy(temp, esti_a);
 
   for (i = 0; i < NCOMP; i++) {
-    a_row = gsl_matrix_column(temp, i);
-    b_row = gsl_matrix_column(esti_a, gsl_vector_get(index, i));
+    a_row = gsl_matrix_column(esti_a, i);
+    b_row = gsl_matrix_column(temp, gsl_vector_get(index, i));
 
-    gsl_vector_memcpy(&b_row.vector, &a_row.vector);
+    gsl_vector_memcpy(&a_row.vector, &b_row.vector);
   }
 
   gsl_matrix_free(temp);

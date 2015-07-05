@@ -16,7 +16,8 @@ double W_STOP = 1e-6;
 size_t MAX_STEP= 512;
 
 double logit(double in){
-    return 1.0 - 2.0 * (1.0 / (1.0 + exp(-in)));
+  // NOTE: gsl_expm1 computes exp(x)-1, hence the 2 + in denominator
+    return 1.0 - (2.0 / (2.0 + gsl_expm1(-in)));
 }
 
 void pca_whiten(
