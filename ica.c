@@ -16,10 +16,6 @@ double W_STOP = 1e-6;
 size_t MAX_STEP= 512;
 
 double logit(double in){
-  if (absolute(in) < 1e-6){
-    return(1.0);
-  }
-  else
     return 1.0 - 2.0 * (1.0 / (1.0 + exp(-in)));
 }
 
