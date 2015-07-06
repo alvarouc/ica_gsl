@@ -1,6 +1,8 @@
 #include "../ica.h"
 // #include "../util/util.h"
 #include <time.h>
+#include <opm.h>
+
 // #include <gsl/gsl_matrix.h>
 double experiment(size_t, size_t, size_t, int);
 
@@ -30,6 +32,7 @@ double experiment(size_t NSUB, size_t NCOMP, size_t NVOX, int verbose){
   end = clock();
   cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
   printf("Time used : %g", cpu_time_used);
+  /*
   // Match by correlation
   ica_match_gt(true_a, true_s, estimated_a, estimated_s);
 
@@ -48,7 +51,7 @@ double experiment(size_t NSUB, size_t NCOMP, size_t NVOX, int verbose){
   diag = gsl_matrix_diagonal(cs);
   avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
   printf("\n Average Accuracy: %.3f", avg);
-
+  */
   //Clean
   gsl_matrix_free(true_a);
   gsl_matrix_free(true_s);

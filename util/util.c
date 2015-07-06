@@ -5,7 +5,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_permutation.h>
-
+#include <omp.h>
 
 double absolute(double value) {
   if (value < 0) {
@@ -151,7 +151,9 @@ void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl
 
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;
+  #pragma omp parallel for
   for (i = 0; i < input->size1; i++) {
+    #pragma omp parallel for
     for (j = 0; j < input->size2; j++) {
       gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
     }

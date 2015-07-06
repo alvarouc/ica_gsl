@@ -8,6 +8,7 @@
 #include <gsl/gsl_randist.h>
 #include "../ica.h"
 #include <gsl/gsl_math.h>
+#include <opm.h>
 
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
@@ -330,7 +331,7 @@ void test_infomax(void){
   // X = AS
   matrix_mmul(true_a, true_s, true_x);
   // A,S <- ICA(X, NCOMP)
-  ica(estimated_a, estimated_s, true_x);
+  ica(estimated_a, estimated_s, true_x, 1);
   // Match by correlation
   ica_match_gt(true_a, true_s, estimated_a, estimated_s);
 

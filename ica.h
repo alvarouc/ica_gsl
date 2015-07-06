@@ -3,6 +3,7 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_permutation.h>
+#include <omp.h>
 
 #include "util/util.h"
 void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
