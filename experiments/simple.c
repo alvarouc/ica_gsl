@@ -23,14 +23,14 @@ double experiment(size_t NSUB, size_t NCOMP, size_t NVOX, int verbose){
   // matrix_apply_all(true_s, gsl_pow_3);
   // X = AS
   matrix_mmul(true_a, true_s, true_x);
-  clock_t start, end;
+  double start, end;
   double cpu_time_used;
 
-  start = clock();
+  start = omp_get_wtime();
   // A,S <- ICA(X, NCOMP)
   ica(estimated_a, estimated_s, true_x, verbose);
-  end = clock();
-  cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
   printf("Time used : %g", cpu_time_used);
   /*
   // Match by correlation
