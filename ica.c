@@ -115,7 +115,11 @@ int w_update(
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
   gsl_rng_set (r, rand());
-  gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
+  print_vector_head(permute);
+  gsl_ran_shuffle(r, permute->data, permute->size, sizeof(size_t));
+  // gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
+  print_vector_head(permute);
+  printf("\n************");
 
   size_t start;
   gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
