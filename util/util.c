@@ -4,6 +4,8 @@
 // #include <stdio.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_permutation.h>
+
 
 double absolute(double value) {
   if (value < 0) {

@@ -6,6 +6,7 @@
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_permutation.h>
 #include <math.h>
 
 double EPS = 1e-18;
@@ -52,7 +53,7 @@ void pca_whiten(
   */
 
   //Compute eigen values with GSL
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1);
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1 );
   gsl_eigen_symmv(cov, eval, evec, w);
   gsl_matrix_free(cov);
   gsl_eigen_symmv_free(w);
@@ -98,25 +99,30 @@ int w_update(
   double lrate){
 
   int error = 0;
+  size_t i;
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
   gsl_matrix *ib = gsl_matrix_alloc(1,block);
   gsl_matrix_set_all( ib, 1.0);
   //getting permutation vector
-  gsl_vector *permute = gsl_vector_alloc(NVOX);
-  size_t i;
-  for (i = 0; i < NVOX; i++) {
-    gsl_vector_set(permute, i, i);
-  }
+
+    const gsl_rng_type * T;
   gsl_rng * r;
-  const gsl_rng_type * T;
+  gsl_permutation * p = gsl_permutation_alloc (NVOX);
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-  gsl_rng_set (r, rand());
-  gsl_ran_shuffle(r, permute->data, permute->size, sizeof(size_t));
-  // gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
+  gsl_permutation_init (p);
+  gsl_ran_shuffle (r, p->data, NVOX, sizeof(size_t));
+  gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
+  gsl_matrix_memcpy(shuffled_x_white, x_white);
+  gsl_vector_view arow;
+  for (i = 0; i < x_white->size1; i++) {
+    arow = gsl_matrix_row(shuffled_x_white,i);
+    gsl_permute_vector (p, &arow.vector);
+
+  }
 
   size_t start;
   gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
@@ -126,9 +132,8 @@ int w_update(
   gsl_matrix *ones        = gsl_matrix_alloc(block,1);
   gsl_matrix_set_all(ones, 1.0);
   double max;
-
+  gsl_matrix_view sub_x_white_view;
   gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
-  gsl_vector_view src, dest;
   for (start = 0; start < NVOX; start = start + block) {
     if (start + block > NVOX-1){
       block = NVOX-start;
@@ -147,11 +152,13 @@ int w_update(
 
     }
     // sub_x_white = xwhite[:, permute[start:start+block]]
-    for (i = start; i < start+block; i++) {
+    /*for (i = start; i < start+block; i++) {
       src = gsl_matrix_column(x_white, gsl_vector_get(permute, i));
       dest = gsl_matrix_column(sub_x_white, i-start);
       gsl_vector_memcpy(&dest.vector, &src.vector);
-    }
+    }*/
+    sub_x_white_view = gsl_matrix_submatrix(shuffled_x_white, 0,start, NCOMP, block );
+    gsl_matrix_memcpy(sub_x_white, &sub_x_white_view.matrix);
     // Compute unmixed = weights . sub_x_white + bias . ib
     matrix_mmul(weights, sub_x_white, unmixed);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
@@ -192,19 +199,20 @@ int w_update(
 
   //clean up
   gsl_rng_free (r);
+  gsl_permutation_free (p);
   gsl_matrix_free(d_unmixer);
-  gsl_vector_free(permute);
   gsl_matrix_free(ib);
   gsl_matrix_free(unmixed);
   gsl_matrix_free(temp_I);
   gsl_matrix_free(sub_x_white);
   gsl_matrix_free(ones);
   gsl_matrix_free(unm_logit);
+  gsl_matrix_free(shuffled_x_white);
   return(error);
 
 }
 
-void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
+void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S){
   /*Computes ICA infomax in whitened data
     Decomposes x_white as x_white=AS
     *Input
@@ -216,30 +224,31 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
   int verbose = 1; //true
 
   size_t NCOMP = x_white->size1;
-  gsl_matrix *weights        = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *old_weights    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *bias           = gsl_matrix_calloc(NCOMP, 1);
-  gsl_matrix *weights_change = gsl_matrix_calloc(NCOMP,NCOMP);
-  gsl_matrix *old_wt_change  = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *d_weights      = gsl_matrix_calloc(NCOMP,NCOMP);
   gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *old_d_weights  = gsl_matrix_calloc(NCOMP,NCOMP);
+
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
   double lrate = 0.005/log((double)NCOMP);
-  double change;
+  double change=1;
   double angle_delta =0;
-  size_t step = 0;
+  size_t step = 1;
   int error = 0;
-  while(step < MAX_STEP){
+  while( (step < MAX_STEP) && (change > W_STOP)){
     error = w_update(weights, x_white, bias, lrate);
     if (error==1 || error==2){
       // It blowed up! RESTART!
-      step = 0;
+      step = 1;
       // change = 1;
       error = 0;
       lrate *= ANNEAL;
       gsl_matrix_set_identity(weights);
       gsl_matrix_set_identity(old_weights);
-      gsl_matrix_set_zero(old_wt_change);
+      gsl_matrix_set_zero(d_weights);
+      gsl_matrix_set_zero(old_d_weights);
       gsl_matrix_set_zero(bias);
 
       if (lrate > MIN_LRATE){
@@ -250,29 +259,25 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
       }
     }
     else if (error==0){
-      // WEIGHTS_CHANGE <- WEIGHTS - OLD_WEIGHTS
-      gsl_matrix_memcpy(weights_change, weights);
-      gsl_matrix_sub(weights_change, old_weights);
-      // old_weights <- weights
-      gsl_matrix_memcpy(old_weights, weights);
-      change = matrix_norm(weights_change);
-      step ++;
+      gsl_matrix_memcpy(d_weights, weights);
+      gsl_matrix_sub(d_weights, old_weights);
+      change = matrix_norm(d_weights);
+
       if (step > 2){
         // Compute angle delta
-        gsl_matrix_memcpy(temp_change, old_wt_change);
-        gsl_matrix_mul_elements(temp_change, weights_change);
-        angle_delta = acos(matrix_sum(temp_change) / sqrt(matrix_norm(weights_change)*(matrix_norm(old_wt_change))));
+        gsl_matrix_memcpy(temp_change, d_weights);
+        gsl_matrix_mul_elements(temp_change, old_d_weights);
+        angle_delta = acos(matrix_sum(temp_change) / sqrt(matrix_norm(d_weights)*(matrix_norm(old_d_weights))));
         angle_delta *= (180.0 / M_PI);
       }
 
+      gsl_matrix_memcpy(old_weights, weights);
+
       if (angle_delta > 60){
         lrate *= ANNEAL;
-        gsl_matrix_memcpy(old_wt_change, weights_change);
-        // old_change = change;
-
+        gsl_matrix_memcpy(old_d_weights, d_weights);
       } else if (step==1) {
-        // old_change = change;
-        gsl_matrix_memcpy(old_wt_change, weights_change);
+        gsl_matrix_memcpy(old_d_weights, d_weights);
       }
 
       if ((verbose && (step % 1)== 0) || change < W_STOP){
@@ -280,21 +285,16 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
           step, lrate, change, angle_delta);
       }
 
-
-      if (change < W_STOP) step = MAX_STEP;
-      // if (change > 1.0e3 ) lrate *= ANNEAL;
-      }
-
+      step ++;
+    }
   }
 
-
-  // weights ^-1
-  matrix_inv(weights, A);
   matrix_mmul(weights, x_white, S);
-  gsl_matrix_free(old_wt_change);
-  gsl_matrix_free(weights);
+  gsl_matrix_free(old_d_weights);
   gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
+  gsl_matrix_free(d_weights);
+
 }
 
 void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
@@ -302,7 +302,8 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
   const size_t NCOMP = A->size2;
   const size_t NSUB = X->size1;
   const size_t NVOX = X->size2;
-  gsl_matrix *white_A = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
+  gsl_matrix *inv_weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *white_X = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
   gsl_matrix *dewhite = gsl_matrix_alloc(NSUB, NCOMP);
@@ -310,11 +311,14 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
   pca_whiten(X, NCOMP, white_X, white, dewhite, 1);
   printf("Done.");
   printf("\nINFOMAX ...");
-  infomax(white_X, white_A, S);
+  infomax(white_X, weights, S);
   printf("Done");
-  matrix_mmul(dewhite, white_A, A);
 
-  gsl_matrix_free(white_A);
+
+  matrix_inv(weights, inv_weights);
+  matrix_mmul(dewhite, inv_weights, A);
+
+  gsl_matrix_free(weights);
   gsl_matrix_free(white_X);
   gsl_matrix_free(white);
   gsl_matrix_free(dewhite);

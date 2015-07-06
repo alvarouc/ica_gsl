@@ -256,8 +256,8 @@ void test_pca_whiten(void)  {
 
 void test_w_update(void){
 
-  size_t NSUB = 200;
-  size_t NCOMP = 3;
+  size_t NSUB = 400;
+  size_t NCOMP = 6;
   size_t NVOX = 10000;
   gsl_matrix *true_A  = gsl_matrix_alloc(NSUB, NCOMP);
   gsl_matrix *true_S  = gsl_matrix_alloc(NCOMP, NVOX);
@@ -311,7 +311,7 @@ void test_w_update(void){
 void test_infomax(void){
 
   size_t NSUB = 400;
-  size_t NCOMP = 6;
+  size_t NCOMP = 10;
   size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
