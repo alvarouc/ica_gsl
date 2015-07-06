@@ -212,7 +212,7 @@ int w_update(
 
 }
 
-void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S){
+void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbose){
   /*Computes ICA infomax in whitened data
     Decomposes x_white as x_white=AS
     *Input
@@ -221,7 +221,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S){
     A : mixing matrix
     S : source matrix
   */
-  int verbose = 1; //true
+  // int verbose = 1; //true
 
   size_t NCOMP = x_white->size1;
   gsl_matrix *old_weights    = gsl_matrix_alloc(NCOMP,NCOMP);
@@ -280,7 +280,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S){
         gsl_matrix_memcpy(old_d_weights, d_weights);
       }
 
-      if ((verbose && (step % 1)== 0) || change < W_STOP){
+      if ((verbose && (step % 10)== 0) || change < W_STOP){
         printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
           step, lrate, change, angle_delta);
       }
@@ -297,7 +297,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S){
 
 }
 
-void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
+void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
 
   const size_t NCOMP = A->size2;
   const size_t NSUB = X->size1;
@@ -307,13 +307,12 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X){
   gsl_matrix *white_X = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
   gsl_matrix *dewhite = gsl_matrix_alloc(NSUB, NCOMP);
-  printf("\nPCA decomposition ...");
+  if (verbose) printf("\nPCA decomposition ...");
   pca_whiten(X, NCOMP, white_X, white, dewhite, 1);
-  printf("Done.");
-  printf("\nINFOMAX ...");
-  infomax(white_X, weights, S);
-  printf("Done");
-
+  if (verbose) printf("Done.");
+  if (verbose) printf("\nINFOMAX ...");
+  infomax(white_X, weights, S, verbose);
+  if (verbose) printf("Done");
 
   matrix_inv(weights, inv_weights);
   matrix_mmul(dewhite, inv_weights, A);
