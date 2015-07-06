@@ -12,7 +12,7 @@ double EPS = 1e-18;
 double MAX_W = 1.0e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
-double W_STOP = 1e-6;
+double W_STOP = 1e-8;
 size_t MAX_STEP= 512;
 
 double logit(double in){
@@ -115,11 +115,8 @@ int w_update(
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
   gsl_rng_set (r, rand());
-  print_vector_head(permute);
   gsl_ran_shuffle(r, permute->data, permute->size, sizeof(size_t));
   // gsl_ran_shuffle(r, permute->data, NVOX, sizeof (size_t));
-  print_vector_head(permute);
-  printf("\n************");
 
   size_t start;
   gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
@@ -162,16 +159,18 @@ int w_update(
     // Compute 1-2*logit
     gsl_matrix_memcpy(unm_logit, unmixed);
     matrix_apply_all(unm_logit, logit);
-    // weights = weights + lrate*block*I+(unmixed.T)
+    // weights = weights + lrate*(block*I+(unm_logit*unmixed.T))*weights
     gsl_matrix_set_identity(temp_I); // temp_I = I
+    // (1) temp_I = block*temp_I +unm_logit*unmixed.T
     gsl_blas_dgemm( CblasNoTrans,CblasTrans,
                     1.0, unm_logit, unmixed,
-                    (double)block , temp_I);// temp_I = block*temp_I +unm_logit*unmixed.T
+                    (double)block , temp_I);
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
     gsl_matrix_memcpy(d_unmixer, weights);
+    // (2) weights = weights + lrate*temp_I*weights
     gsl_blas_dgemm( CblasNoTrans,CblasNoTrans,
                     lrate, temp_I, d_unmixer,
-                    1.0, weights);// weights = weights + lrate*temp_I*weights
+                    1.0, weights);
     // Update the bias
     gsl_blas_dgemm( CblasNoTrans, CblasNoTrans,
                     lrate, unm_logit, ones,
