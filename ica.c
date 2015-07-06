@@ -12,7 +12,7 @@ double EPS = 1e-18;
 double MAX_W = 1.0e8;
 double ANNEAL = 0.9;
 double MIN_LRATE = 1e-6;
-double W_STOP = 1e-8;
+double W_STOP = 1e-6;
 size_t MAX_STEP= 512;
 
 double logit(double in){
@@ -253,14 +253,15 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
       // WEIGHTS_CHANGE <- WEIGHTS - OLD_WEIGHTS
       gsl_matrix_memcpy(weights_change, weights);
       gsl_matrix_sub(weights_change, old_weights);
+      // old_weights <- weights
+      gsl_matrix_memcpy(old_weights, weights);
       change = matrix_norm(weights_change);
       step ++;
-      // change = matrix_norm(old_wt_change);
       if (step > 2){
+        // Compute angle delta
         gsl_matrix_memcpy(temp_change, old_wt_change);
         gsl_matrix_mul_elements(temp_change, weights_change);
-        angle_delta = acos(matrix_sum(temp_change) /
-          sqrt(matrix_norm(weights_change)*matrix_norm(old_wt_change)));
+        angle_delta = acos(matrix_sum(temp_change) / sqrt(matrix_norm(weights_change)*(matrix_norm(old_wt_change))));
         angle_delta *= (180.0 / M_PI);
       }
 
@@ -268,22 +269,20 @@ void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S){
         lrate *= ANNEAL;
         gsl_matrix_memcpy(old_wt_change, weights_change);
         // old_change = change;
-        gsl_matrix_memcpy(weights_change, weights);
-        gsl_matrix_sub(weights_change, old_weights);
 
       } else if (step==1) {
         // old_change = change;
         gsl_matrix_memcpy(old_wt_change, weights_change);
       }
 
-      if ((verbose && (step % 20)== 0) || change < W_STOP){
+      if ((verbose && (step % 1)== 0) || change < W_STOP){
         printf("\nStep %zu: Lrate %.1e, Wchange %.1e, Angle %.2f",
           step, lrate, change, angle_delta);
       }
 
-      gsl_matrix_memcpy(old_weights, weights);
+
       if (change < W_STOP) step = MAX_STEP;
-      if (change > 1.0e3 ) lrate *= ANNEAL;
+      // if (change > 1.0e3 ) lrate *= ANNEAL;
       }
 
   }

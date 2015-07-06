@@ -173,7 +173,6 @@ double matrix_norm(gsl_matrix *input){
       accum += gsl_pow_2(gsl_matrix_get(input,i,j));
     }
   }
-
   return (accum);
 
 }
