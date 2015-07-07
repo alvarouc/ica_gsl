@@ -103,7 +103,7 @@ void test_matrix_cross_corr(void){
   matrix_cross_corr(C, A, A);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
-  printf(" By col: Time  %g, ", cpu_time_used);
+  printf("\t\tBy col: Time  %g, ", cpu_time_used);
 
   gsl_matrix_sub(test, C);
   if ( matrix_norm(test)/NVAR/NVAR > 0.01 )
@@ -148,8 +148,12 @@ void test_matrix_mean(void){
 
 void test_matrix_demean(void){
   // Test the util function matrix_demean
-
+  start = omp_get_wtime();
   matrix_demean(input);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tTime  %g, ", cpu_time_used);
+
   gsl_vector *mean = gsl_vector_alloc(NCOL);
   matrix_mean(mean, input);
 
@@ -164,7 +168,13 @@ void test_matrix_demean(void){
 
 void test_matrix_cov(void){
   gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
+
+  start = omp_get_wtime();
   matrix_cov(input, cov);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tTime  %g, ", cpu_time_used);
+
   // print_matrix_corner(cov);
   size_t i,j;
   size_t n_diferent = 0;
@@ -185,7 +195,7 @@ void test_matrix_norm(void){
   double norm = matrix_norm(input);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
-  printf(" Time  %g, ", cpu_time_used);
+  printf("\t\tTime  %g, ", cpu_time_used);
 
   // printf("\nMatrix Norm %g\n", norm);
   CU_ASSERT_EQUAL(norm, NROW*NCOL);
@@ -204,7 +214,7 @@ void test_matrix_sum(void){
   double sum = matrix_sum(input);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
-  printf(" Time  %g, ", cpu_time_used);
+  printf("\t\tTime  %g, ", cpu_time_used);
 
   CU_ASSERT_EQUAL(sum, NROW*NCOL);
 }
@@ -235,7 +245,7 @@ void test_matrix_apply_all(void){
   matrix_apply_all(input, log10);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
-  printf(" Time  %g, ", cpu_time_used);
+  printf("\t\tTime  %g, ", cpu_time_used);
 
   gsl_matrix *test = gsl_matrix_alloc(input->size1, input->size2);
   gsl_matrix_set_all(test, 2.0);
@@ -249,8 +259,8 @@ void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
-  size_t NSUB = 200;
-  size_t NCOMP = 3;
+  size_t NSUB = 1000;
+  size_t NCOMP = 100;
   size_t NVOX = 10000;
   gsl_matrix *true_A = gsl_matrix_alloc(NSUB, NCOMP);
   gsl_matrix *true_S = gsl_matrix_alloc(NCOMP, NVOX);
@@ -266,7 +276,11 @@ void test_pca_whiten(void)  {
   // X = AS
   matrix_mmul(true_A, true_S, true_X);
   // PCA(X)
+  start = omp_get_wtime();
   pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\t\tTime  %g, ", cpu_time_used);
   // test if covariance of ouput is identity
   gsl_matrix *cov = gsl_matrix_alloc(NCOMP,NCOMP);
   matrix_cov(white_x, cov);
@@ -298,8 +312,8 @@ void test_pca_whiten(void)  {
 
 void test_w_update(void){
 
-  size_t NSUB = 400;
-  size_t NCOMP = 6;
+  size_t NSUB = 1000;
+  size_t NCOMP = 100;
   size_t NVOX = 10000;
   gsl_matrix *true_A  = gsl_matrix_alloc(NSUB, NCOMP);
   gsl_matrix *true_S  = gsl_matrix_alloc(NCOMP, NVOX);
@@ -331,7 +345,13 @@ void test_w_update(void){
   int error = 0;
   double lrate = 0.001;
   gsl_matrix_memcpy(old_weights, weights);
+
+  start = omp_get_wtime();
   error = w_update(weights, white_x, bias, lrate);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tTime  %g, ", cpu_time_used);
+
   CU_ASSERT_EQUAL(error, 0);
   if (gsl_matrix_equal(old_weights, weights))
     CU_FAIL("Weights have not been updated");
@@ -372,13 +392,13 @@ void test_infomax(void){
   // X = AS
   matrix_mmul(true_a, true_s, true_x);
   // A,S <- ICA(X, NCOMP)
-  ica(estimated_a, estimated_s, true_x, 1);
+  ica(estimated_a, estimated_s, true_x, 0);
   // Match by correlation
   ica_match_gt(true_a, true_s, estimated_a, estimated_s);
 
   matrix_cross_corr_row(cs, true_s, estimated_s);
   printf("\nSource estimation accuracy");
-  print_matrix_corner(cs);
+  // print_matrix_corner(cs);
   matrix_apply_all(cs, absolute);
   gsl_vector_view diag = gsl_matrix_diagonal(cs);
   double avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
@@ -388,7 +408,7 @@ void test_infomax(void){
   }
   matrix_cross_corr(cs, true_a, estimated_a);
   printf("\nLoading estimation accuracy");
-  print_matrix_corner(cs);
+  // print_matrix_corner(cs);
   matrix_apply_all(cs, absolute);
   diag = gsl_matrix_diagonal(cs);
   avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);

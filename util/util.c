@@ -193,8 +193,10 @@ void matrix_demean(gsl_matrix *input){
 
   size_t NCOL = input->size2;
   size_t i;
+  gsl_vector_view column;
+  #pragma omp parallel for private(i,column)
   for (i = 0; i < NCOL; i++) {
-    gsl_vector_view column = gsl_matrix_column(input, i);
+    column = gsl_matrix_column(input, i);
     gsl_vector_add_constant( &column.vector,
                              -gsl_vector_get(mean, i));
   }
@@ -254,10 +256,10 @@ void matrix_cov(gsl_matrix *input, gsl_matrix *cov){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-  double scale(double c){
-    c *= 1.0/(double)(input->size2);
-    return c;
-  }
-  // gsl_matrix_scale(cov, 1.0/(double)(input->size2));
-  matrix_apply_all(cov, scale);
+  // double scale(double c){
+    // c *= 1.0/(double)(input->size2);
+    // return c;
+  // }
+  gsl_matrix_scale(cov, 1.0/(double)(input->size2));
+  // matrix_apply_all(cov, scale);
 }
