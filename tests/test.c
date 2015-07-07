@@ -100,7 +100,9 @@ void test_matrix_corr(void){
 
   gsl_matrix_sub(test, C);
   if ( matrix_norm(test)/NVAR/NVAR > 0.01 )
+  { print_matrix_corner(C);
     CU_FAIL("correlation matrix is not close to identity!");
+  }
 
   gsl_matrix_free(C);
 }

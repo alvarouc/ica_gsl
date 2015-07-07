@@ -77,7 +77,7 @@ void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for collapse(2)
+  #pragma omp parallel for private(i,j,a,b,c)
   for (i = 0; i < A->size1; i++) {
     for (j = 0; j < B->size1; j++) {
       a = gsl_matrix_row(A, i);
@@ -99,7 +99,7 @@ void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for collapse(2)
+  #pragma omp parallel for private(i,j,a,b,c)
   for (i = 0; i < A->size2; i++) {
     for (j = 0; j < B->size2; j++) {
       a = gsl_matrix_column(A, i);
@@ -215,7 +215,6 @@ void matrix_mean(gsl_vector *mean, gsl_matrix *input){
   size_t col;
   size_t NCOL = input->size2;
   gsl_vector_view a_col;
-  #pragma omp parallel for
   for (col = 0; col < NCOL; col++) {
     a_col = gsl_matrix_column(input, col);
     gsl_vector_set(mean, col, gsl_stats_mean(a_col.vector.data,
@@ -265,12 +264,10 @@ void matrix_cov(gsl_matrix *input, gsl_matrix *cov){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-
-  gsl_matrix_scale(cov, 1.0/(double)(input->size2));
-
-  /*double scale(double c){
+  double scale(double c){
     c *= 1.0/(double)(input->size2);
     return c;
   }
-  matrix_apply_all(cov, scale);*/
+  // gsl_matrix_scale(cov, 1.0/(double)(input->size2));
+  matrix_apply_all(cov, scale);
 }
