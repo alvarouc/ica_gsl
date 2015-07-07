@@ -180,7 +180,13 @@ void test_matrix_cov(void){
 void test_matrix_norm(void){
 
   gsl_matrix_set_all(input,1);
+
+  start = omp_get_wtime();
   double norm = matrix_norm(input);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf(" Time  %g, ", cpu_time_used);
+
   // printf("\nMatrix Norm %g\n", norm);
   CU_ASSERT_EQUAL(norm, NROW*NCOL);
 
@@ -193,7 +199,13 @@ void test_matrix_norm(void){
 
 void test_matrix_sum(void){
   gsl_matrix_set_all(input, 1);
+
+  start = omp_get_wtime();
   double sum = matrix_sum(input);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf(" Time  %g, ", cpu_time_used);
+
   CU_ASSERT_EQUAL(sum, NROW*NCOL);
 }
 
@@ -218,7 +230,12 @@ void test_matrix_mmul(void){
 void test_matrix_apply_all(void){
 
   gsl_matrix_set_all(input, 100);
+
+  start = omp_get_wtime();
   matrix_apply_all(input, log10);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf(" Time  %g, ", cpu_time_used);
 
   gsl_matrix *test = gsl_matrix_alloc(input->size1, input->size2);
   gsl_matrix_set_all(test, 2.0);

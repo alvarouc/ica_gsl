@@ -162,6 +162,7 @@ double matrix_norm(gsl_matrix *input){
 
   size_t i,j;
   double accum=0;
+  #pragma omp parallel for private(i,j) reduction(+:accum) collapse(2)
   for (i = 0; i < input->size1; i++) {
     for (j = 0; j < input->size2; j++) {
       accum += gsl_pow_2(gsl_matrix_get(input,i,j));
@@ -175,6 +176,7 @@ double matrix_sum(gsl_matrix *input){
 
   size_t i,j;
   double accum=0;
+  #pragma omp parallel for private(i,j) reduction(+:accum) collapse(2)
   for (i = 0; i < input->size1; i++) {
     for (j = 0; j < input->size2; j++) {
       accum += gsl_matrix_get(input,i,j);
