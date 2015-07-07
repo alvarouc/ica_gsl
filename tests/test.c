@@ -13,6 +13,8 @@
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 gsl_matrix *input;
+double start, end;
+double cpu_time_used;
 // check if memory was allocated
 
 // unit testing for ICA
@@ -86,17 +88,22 @@ void test_random_matrix(void){
 
 }
 
-void test_matrix_corr(void){
+void test_matrix_cross_corr(void){
   size_t NSUB = 1000;
-  size_t NVAR = 10;
+  size_t NVAR = 100;
   gsl_matrix *A = gsl_matrix_alloc(NSUB, NVAR);
+  gsl_matrix *A_T = gsl_matrix_alloc(NVAR, NSUB);
   gsl_matrix *test = gsl_matrix_alloc(NVAR,NVAR);
   gsl_matrix_set_identity(test);
   random_matrix(A, 1, gsl_ran_gaussian);
-
+  gsl_matrix_transpose_memcpy(A_T, A);
   gsl_matrix *C = gsl_matrix_calloc(NVAR,NVAR);
 
+  start = omp_get_wtime();
   matrix_cross_corr(C, A, A);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf(" By col: Time  %g, ", cpu_time_used);
 
   gsl_matrix_sub(test, C);
   if ( matrix_norm(test)/NVAR/NVAR > 0.01 )
@@ -104,7 +111,22 @@ void test_matrix_corr(void){
     CU_FAIL("correlation matrix is not close to identity!");
   }
 
+  start = omp_get_wtime();
+  matrix_cross_corr_row(C, A_T, A_T);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf(" By row : Time  %g, ", cpu_time_used);
+  gsl_matrix_set_identity(test);
+  gsl_matrix_sub(test, C);
+  if ( matrix_norm(test)/NVAR/NVAR > 0.01 )
+  { print_matrix_corner(C);
+    CU_FAIL("correlation matrix is not close to identity!");
+  }
+
   gsl_matrix_free(C);
+  gsl_matrix_free(A);
+  gsl_matrix_free(A_T);
+  gsl_matrix_free(test);
 }
 
 
@@ -396,7 +418,7 @@ int main()
 
    /* add the tests to the suite */
    if (
-(NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_corr)) ||
+(NULL == CU_add_test(pSuite_util,"test of matrix_cross_corr()",test_matrix_cross_corr)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_inv()",test_matrix_inv)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_vector()",test_random_vector)) ||
 (NULL == CU_add_test(pSuite_util,"test of random_matrix()",test_random_matrix)) ||

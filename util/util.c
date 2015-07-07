@@ -68,16 +68,10 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
 }
 
 void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
-  /* NOTE: Paralelize the inner loop
-  do instead
-  for (i = 0; i < A->size2; i++) {
-    for (j = i; j < B->size2; j++) {
-  this reduces number of operations to half
-  */
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for private(i,j,a,b,c)
+  #pragma omp parallel for private(i,j,a,b,c) collapse(2)
   for (i = 0; i < A->size1; i++) {
     for (j = 0; j < B->size1; j++) {
       a = gsl_matrix_row(A, i);
@@ -91,15 +85,10 @@ void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
 }
 
 void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
-  /* NOTE: Paralelize the inner loop
-  do instead
-  for (i = 0; i < A->size2; i++) {
-    for (j = 0; j < B->size2; j++) {
-  */
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for private(i,j,a,b,c)
+  #pragma omp parallel for private(i,j,a,b,c) collapse(2)
   for (i = 0; i < A->size2; i++) {
     for (j = 0; j < B->size2; j++) {
       a = gsl_matrix_column(A, i);
@@ -155,7 +144,6 @@ void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;
   #pragma omp parallel for collapse(2)
   for (i = 0; i < input->size1; i++) {
-    // #pragma omp parallel for
     for (j = 0; j < input->size2; j++) {
       gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
     }
