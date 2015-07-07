@@ -31,27 +31,8 @@ double experiment(size_t NSUB, size_t NCOMP, size_t NVOX, int verbose){
   ica(estimated_a, estimated_s, true_x, verbose);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
-  printf("Time used : %g", cpu_time_used);
-  /*
-  // Match by correlation
-  ica_match_gt(true_a, true_s, estimated_a, estimated_s);
+  printf("\nTime used : %g\n", cpu_time_used);
 
-  matrix_cross_corr_row(cs, true_s, estimated_s);
-  printf("\nSource estimation accuracy");
-  print_matrix_corner(cs);
-  matrix_apply_all(cs, absolute);
-  gsl_vector_view diag = gsl_matrix_diagonal(cs);
-  double avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
-  printf("\n Average Accuracy: %.3f", avg);
-
-  matrix_cross_corr(cs, true_a, estimated_a);
-  printf("\nLoading estimation accuracy");
-  print_matrix_corner(cs);
-  matrix_apply_all(cs, absolute);
-  diag = gsl_matrix_diagonal(cs);
-  avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
-  printf("\n Average Accuracy: %.3f", avg);
-  */
   //Clean
   gsl_matrix_free(true_a);
   gsl_matrix_free(true_s);

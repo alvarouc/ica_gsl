@@ -1,12 +1,11 @@
 # CFLAGS=-L/opt/OpenBLAS/lib -I /opt/OpenBLAS/include
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
-LIBS=-lopenblas -llapack -lgsl -lm -fopenmp
+LIBS=-lopenblas  -lgsl -lm -O3 -fopenmp
 CFLAGS=-pg -Wall
-# DEPS = ../util/utils.h
 OBJ = simple.o ica.o util.o
 
-test: $(OBJ)
+simple: $(OBJ)
 	$(CC) $^ -o simple $(CFLAGS) $(LIBS)
 
 util.o: ../util/util.c ../util/util.h

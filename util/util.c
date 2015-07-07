@@ -77,6 +77,7 @@ void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
+  #pragma omp parallel for collapse(2)
   for (i = 0; i < A->size1; i++) {
     for (j = 0; j < B->size1; j++) {
       a = gsl_matrix_row(A, i);
@@ -98,6 +99,7 @@ void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
+  #pragma omp parallel for collapse(2)
   for (i = 0; i < A->size2; i++) {
     for (j = 0; j < B->size2; j++) {
       a = gsl_matrix_column(A, i);
@@ -151,9 +153,9 @@ void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl
 
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;
-  #pragma omp parallel for
+  #pragma omp parallel for collapse(2)
   for (i = 0; i < input->size1; i++) {
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (j = 0; j < input->size2; j++) {
       gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
     }
@@ -213,6 +215,7 @@ void matrix_mean(gsl_vector *mean, gsl_matrix *input){
   size_t col;
   size_t NCOL = input->size2;
   gsl_vector_view a_col;
+  #pragma omp parallel for
   for (col = 0; col < NCOL; col++) {
     a_col = gsl_matrix_column(input, col);
     gsl_vector_set(mean, col, gsl_stats_mean(a_col.vector.data,
@@ -253,7 +256,7 @@ void print_vector_head(gsl_vector *input){
 
 }
 
-void matrix_cov(const gsl_matrix *input, gsl_matrix *cov){
+void matrix_cov(gsl_matrix *input, gsl_matrix *cov){
   /*Compute matrix covariance
   The input is a matrix with an observation per row
   The function assumes the matrix is demeaned
@@ -262,12 +265,12 @@ void matrix_cov(const gsl_matrix *input, gsl_matrix *cov){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
+
   gsl_matrix_scale(cov, 1.0/(double)(input->size2));
-  /*
-  size_t i = 0;
-  gsl_vector_view row;
-  for (i = 0; i < cov->size2; i++) {
-    row = gsl_matrix_row(cov,i);
-    gsl_blas_dscal(1.0/(double)(input->size2), &row.vector);
-  }*/
+
+  /*double scale(double c){
+    c *= 1.0/(double)(input->size2);
+    return c;
+  }
+  matrix_apply_all(cov, scale);*/
 }

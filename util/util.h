@@ -16,7 +16,7 @@ void random_vector(gsl_vector *vec,  double parameter, double (* func)(const gsl
 void random_matrix(gsl_matrix *vec, double parameter,double (* func)(const gsl_rng *, double ));
 void matrix_mean(gsl_vector *mean, gsl_matrix *input);
 void matrix_demean(gsl_matrix *input);
-void matrix_cov(const gsl_matrix *input, gsl_matrix *cov);
+void matrix_cov( gsl_matrix *input, gsl_matrix *cov);
 double matrix_norm(gsl_matrix *input);
 double matrix_sum(gsl_matrix *input);
 void matrix_mmul(gsl_matrix *A, gsl_matrix *B, gsl_matrix *C);
