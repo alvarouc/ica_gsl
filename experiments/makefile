@@ -2,7 +2,7 @@
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
 LIBS=-lopenblas  -lgsl -lm -O3 -fopenmp
-CFLAGS=-pg -Wall
+CFLAGS= -Wall
 OBJ = simple.o ica.o util.o
 
 simple: $(OBJ)

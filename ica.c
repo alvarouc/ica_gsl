@@ -69,6 +69,7 @@ void pca_whiten(
   double e;
   size_t i;
   // eval^{-1/2} evec^T
+  #pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_row(white,i);
@@ -78,6 +79,7 @@ void pca_whiten(
   gsl_matrix_memcpy(dewhite, &temp.matrix);
 
   // evec eval^{1/2}
+  #pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_column(dewhite,i);
