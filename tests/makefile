@@ -2,7 +2,7 @@
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
 LIBS_TEST=-lcunit
-LIBS_UTIL=-llapack  -lgsl -lcblas -latlas -lm -fopenmp
+LIBS_UTIL=-lgsl -lcblas -lm -fopenmp -llapacke
 CFLAGS= -Wall
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o
@@ -17,7 +17,7 @@ ica.o: ../ica.c ../ica.h
 	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL)
 
 test.o: test.c
-	$(CC) -c test.c $(CFLAGS) $(LIBS_TEST)
+	$(CC) -c test.c $(CFLAGS) $(LIBS_UTIL) $(LIBS_TEST)
 
 
 

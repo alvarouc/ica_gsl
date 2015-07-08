@@ -1,4 +1,5 @@
 // #include <CUnit/CUnit.h>
+// #include <lapacke_utils.h>
 #include <CUnit/Basic.h>
 #include "../util/util.h"
 #include <gsl/gsl_eigen.h>
