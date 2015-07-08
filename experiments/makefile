@@ -1,7 +1,7 @@
 # CFLAGS=-L/opt/OpenBLAS/lib -I /opt/OpenBLAS/include
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
-LIBS=-lopenblas  -lgsl -lm -O3 -fopenmp
+LIBS=-lgsl -lcblas -latlas -lm -O3 -fopenmp
 CFLAGS= -Wall
 OBJ = simple.o ica.o util.o
 

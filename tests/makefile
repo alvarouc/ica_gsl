@@ -2,7 +2,7 @@
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
 LIBS_TEST=-lcunit
-LIBS_UTIL=-lopenblas -llapack -fopenmp -lgsl -lcblas -latlas -lm
+LIBS_UTIL=-llapack  -lgsl -lcblas -latlas -lm -fopenmp
 CFLAGS= -Wall
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o

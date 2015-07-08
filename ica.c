@@ -4,9 +4,9 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
+#include <gsl/gsl_permutation.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
-#include <gsl/gsl_permutation.h>
 #include <math.h>
 
 double EPS = 1e-18;
@@ -110,10 +110,10 @@ int w_update(
   gsl_matrix_set_all( ib, 1.0);
   //getting permutation vector
 
-    const gsl_rng_type * T;
+  const gsl_rng_type * T;
   gsl_rng * r;
   gsl_permutation * p = gsl_permutation_alloc (NVOX);
-  gsl_rng_env_setup();
+  // gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
   gsl_permutation_init (p);
@@ -121,6 +121,7 @@ int w_update(
   gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_vector_view arow;
+  #pragma omp parallel for private(i,arow)
   for (i = 0; i < x_white->size1; i++) {
     arow = gsl_matrix_row(shuffled_x_white,i);
     gsl_permute_vector (p, &arow.vector);
@@ -128,7 +129,7 @@ int w_update(
   }
 
   size_t start;
-  gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
+  // gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
   gsl_matrix *unmixed     = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *unm_logit   = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *temp_I      = gsl_matrix_alloc(NCOMP,NCOMP);
@@ -140,8 +141,6 @@ int w_update(
   for (start = 0; start < NVOX; start = start + block) {
     if (start + block > NVOX-1){
       block = NVOX-start;
-      gsl_matrix_free(sub_x_white);
-      sub_x_white= gsl_matrix_alloc(NCOMP, block);
       gsl_matrix_free(ib);
       ib = gsl_matrix_alloc(1,block);
       gsl_matrix_set_all( ib, 1.0);
@@ -155,15 +154,9 @@ int w_update(
 
     }
     // sub_x_white = xwhite[:, permute[start:start+block]]
-    /*for (i = start; i < start+block; i++) {
-      src = gsl_matrix_column(x_white, gsl_vector_get(permute, i));
-      dest = gsl_matrix_column(sub_x_white, i-start);
-      gsl_vector_memcpy(&dest.vector, &src.vector);
-    }*/
     sub_x_white_view = gsl_matrix_submatrix(shuffled_x_white, 0,start, NCOMP, block );
-    gsl_matrix_memcpy(sub_x_white, &sub_x_white_view.matrix);
     // Compute unmixed = weights . sub_x_white + bias . ib
-    matrix_mmul(weights, sub_x_white, unmixed);
+    matrix_mmul(weights, &sub_x_white_view.matrix, unmixed);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
       1.0, bias, ib, 1.0, unmixed);
     // Compute 1-2*logit
@@ -207,7 +200,6 @@ int w_update(
   gsl_matrix_free(ib);
   gsl_matrix_free(unmixed);
   gsl_matrix_free(temp_I);
-  gsl_matrix_free(sub_x_white);
   gsl_matrix_free(ones);
   gsl_matrix_free(unm_logit);
   gsl_matrix_free(shuffled_x_white);

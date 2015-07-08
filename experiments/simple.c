@@ -1,7 +1,6 @@
 #include "../ica.h"
-// #include "../util/util.h"
 #include <time.h>
-#include <opm.h>
+#include <omp.h>
 
 double experiment(size_t NSUB, size_t NCOMP, size_t NVOX, int verbose){
 
