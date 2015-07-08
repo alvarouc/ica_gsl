@@ -9,6 +9,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <math.h>
+#include <gsl/gsl_permute_vector.h>
 
 double EPS = 1e-18;
 double MAX_W = 1.0e8;
