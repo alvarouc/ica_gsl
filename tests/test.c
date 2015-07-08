@@ -8,7 +8,7 @@
 #include <gsl/gsl_randist.h>
 #include "../ica.h"
 #include <gsl/gsl_math.h>
-#include <opm.h>
+#include <omp.h>
 
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
