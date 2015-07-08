@@ -1,20 +1,20 @@
 # CFLAGS=-L/opt/OpenBLAS/lib -I /opt/OpenBLAS/include
 # -lopenblas -llapack -lgsl -lcunit
 CC=gcc
-LIBS_TEST=-lopenblas -llapack -lcunit -lgsl -lm -fopenmp
-LIBS_UTIL=-lopenblas -llapacke -llapack -fopenmp
+LIBS_TEST=-lcunit
+LIBS_UTIL=-lopenblas -llapack -fopenmp -lgsl -lcblas -latlas -lm
 CFLAGS= -Wall
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o
 
 test: $(OBJ)
-	$(CC) $^ -o test $(CFLAGS) $(LIBS_TEST)
+	$(CC) $^ -o test $(CFLAGS) $(LIBS_TEST) $(LIBS_UTIL)
 
 util.o: ../util/util.c ../util/util.h
 	$(CC) -c ../util/util.c $(CFLAGS) $(LIBS_UTIL)
 
 ica.o: ../ica.c ../ica.h
-	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL) -lapop
+	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL)
 
 test.o: test.c
 	$(CC) -c test.c $(CFLAGS) $(LIBS_TEST)
