@@ -43,6 +43,7 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   // S' <- S'[index,:]
   gsl_matrix *temp = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix_memcpy(temp, esti_s);
+  #pragma omp parallel for private(i,a_row,b_row)
   for (i = 0; i < NCOMP; i++) {
     a_row = gsl_matrix_row(esti_s, i);
     b_row = gsl_matrix_row(temp, gsl_vector_get(index, i));
@@ -54,6 +55,7 @@ void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   temp = gsl_matrix_alloc(NSUB, NCOMP);
   gsl_matrix_memcpy(temp, esti_a);
 
+  #pragma omp parallel for private(i,a_row,b_row)
   for (i = 0; i < NCOMP; i++) {
     a_row = gsl_matrix_column(esti_a, i);
     b_row = gsl_matrix_column(temp, gsl_vector_get(index, i));
@@ -71,7 +73,7 @@ void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for private(i,j,a,b,c) collapse(2)
+  #pragma omp parallel for private(i,j,a,b,c)
   for (i = 0; i < A->size1; i++) {
     for (j = 0; j < B->size1; j++) {
       a = gsl_matrix_row(A, i);
@@ -88,7 +90,7 @@ void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B){
   size_t i,j;
   gsl_vector_view a, b;
   double c;
-  #pragma omp parallel for private(i,j,a,b,c) collapse(2)
+  #pragma omp parallel for private(i,j,a,b,c)
   for (i = 0; i < A->size2; i++) {
     for (j = 0; j < B->size2; j++) {
       a = gsl_matrix_column(A, i);
@@ -142,7 +144,7 @@ void random_vector(gsl_vector *vec, double parameter , double (* func)(const gsl
 
 void matrix_apply_all(gsl_matrix *input, double (*fun)(double)){
   size_t i,j;
-  #pragma omp parallel for collapse(2)
+  #pragma omp parallel for collapse(2) private(i,j)
   for (i = 0; i < input->size1; i++) {
     for (j = 0; j < input->size2; j++) {
       gsl_matrix_set(input, i,j, fun(gsl_matrix_get(input, i,j)));
@@ -162,7 +164,7 @@ double matrix_norm(gsl_matrix *input){
 
   size_t i,j;
   double accum=0;
-  #pragma omp parallel for private(i,j) reduction(+:accum) collapse(2)
+  #pragma omp parallel for private(i,j) reduction(+:accum)
   for (i = 0; i < input->size1; i++) {
     for (j = 0; j < input->size2; j++) {
       accum += gsl_pow_2(gsl_matrix_get(input,i,j));
@@ -176,7 +178,7 @@ double matrix_sum(gsl_matrix *input){
 
   size_t i,j;
   double accum=0;
-  #pragma omp parallel for private(i,j) reduction(+:accum) collapse(2)
+  #pragma omp parallel for private(i,j) reduction(+:accum)
   for (i = 0; i < input->size1; i++) {
     for (j = 0; j < input->size2; j++) {
       accum += gsl_matrix_get(input,i,j);
@@ -194,7 +196,7 @@ void matrix_demean(gsl_matrix *input){
   size_t NCOL = input->size2;
   size_t i;
   gsl_vector_view column;
-  #pragma omp parallel for private(i,column)
+  #pragma omp parallel for private(column)
   for (i = 0; i < NCOL; i++) {
     column = gsl_matrix_column(input, i);
     gsl_vector_add_constant( &column.vector,
@@ -207,6 +209,7 @@ void matrix_mean(gsl_vector *mean, gsl_matrix *input){
   size_t col;
   size_t NCOL = input->size2;
   gsl_vector_view a_col;
+  #pragma omp parallel for private( a_col)
   for (col = 0; col < NCOL; col++) {
     a_col = gsl_matrix_column(input, col);
     gsl_vector_set(mean, col, gsl_stats_mean(a_col.vector.data,
@@ -256,10 +259,5 @@ void matrix_cov(gsl_matrix *input, gsl_matrix *cov){
 
   gsl_blas_dgemm (CblasNoTrans, CblasTrans,
     1.0, input, input, 0.0, cov);
-  // double scale(double c){
-    // c *= 1.0/(double)(input->size2);
-    // return c;
-  // }
   gsl_matrix_scale(cov, 1.0/(double)(input->size2));
-  // matrix_apply_all(cov, scale);
 }

@@ -69,7 +69,7 @@ void pca_whiten(
   double e;
   size_t i;
   // eval^{-1/2} evec^T
-  #pragma omp parallel for private(i,e,v)
+  //#pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_row(white,i);
@@ -79,7 +79,7 @@ void pca_whiten(
   gsl_matrix_memcpy(dewhite, &temp.matrix);
 
   // evec eval^{1/2}
-  #pragma omp parallel for private(i,e,v)
+  //#pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_column(dewhite,i);
@@ -121,7 +121,7 @@ int w_update(
   gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_vector_view arow;
-  #pragma omp parallel for private(i,arow)
+  //#pragma omp parallel for private(i,arow)
   for (i = 0; i < x_white->size1; i++) {
     arow = gsl_matrix_row(shuffled_x_white,i);
     gsl_permute_vector (p, &arow.vector);

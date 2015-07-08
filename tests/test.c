@@ -12,7 +12,10 @@
 
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
-gsl_matrix *input;
+size_t NSUB = 1000;
+size_t NCOMP = 20;
+size_t NVOX = 10000;
+gsl_matrix *input, *true_A, *true_S, *true_X, *white_x, *white, *dewhite;
 double start, end;
 double cpu_time_used;
 // check if memory was allocated
@@ -31,11 +34,30 @@ int clean_suite_util(void){
 }
 
 int init_suite_ica(void){
-  input = gsl_matrix_alloc(NROW,NCOL);
-  if (NULL==input) return 1;
-  random_matrix(input, 1, gsl_ran_logistic);
-  matrix_demean(input);
 
+  true_A = gsl_matrix_alloc(NSUB, NCOMP);
+  true_S = gsl_matrix_alloc(NCOMP, NVOX);
+  true_X = gsl_matrix_alloc(NSUB,NVOX);
+  white_x = gsl_matrix_alloc(NCOMP, NVOX);
+  white = gsl_matrix_alloc(NCOMP, NSUB);
+  dewhite = gsl_matrix_alloc(NSUB,NCOMP);
+  // Random gaussian mixing matrix A
+  random_matrix(true_A, 1.0, gsl_ran_gaussian);
+  // Random logistic mixing matrix S
+  random_matrix(true_S, 1.0, gsl_ran_logistic);
+  // X = AS
+  matrix_mmul(true_A, true_S, true_X);
+
+  return 0;
+}
+
+int clean_suite_ica(void){
+  gsl_matrix_free(true_A);
+  gsl_matrix_free(true_S);
+  gsl_matrix_free(true_X);
+  gsl_matrix_free(white);
+  gsl_matrix_free(white_x);
+  gsl_matrix_free(dewhite);
   return 0;
 }
 
@@ -89,7 +111,7 @@ void test_random_matrix(void){
 }
 
 void test_matrix_cross_corr(void){
-  size_t NSUB = 1000;
+  size_t NSUB = 10000;
   size_t NVAR = 100;
   gsl_matrix *A = gsl_matrix_alloc(NSUB, NVAR);
   gsl_matrix *A_T = gsl_matrix_alloc(NVAR, NSUB);
@@ -137,7 +159,13 @@ void test_matrix_mean(void){
   gsl_matrix_set_all(input, 1);
   // Compute column mean
   gsl_vector *mean = gsl_vector_alloc(NCOL);
+
+  start = omp_get_wtime();
   matrix_mean(mean, input);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tTime  %g, ", cpu_time_used);
+
   // Compare to the expected mean
   gsl_vector *expected_mean = gsl_vector_alloc(NCOL);
   gsl_vector_set_all(expected_mean, 1.0);
@@ -167,10 +195,13 @@ void test_matrix_demean(void){
 }
 
 void test_matrix_cov(void){
-  gsl_matrix *cov = gsl_matrix_alloc(input->size1, input->size1);
+  size_t NSUB = 100000;
+  size_t NVAR = 100;
+  gsl_matrix *A = gsl_matrix_alloc(NVAR, NSUB);
+  gsl_matrix *cov = gsl_matrix_alloc(NVAR, NVAR);
 
   start = omp_get_wtime();
-  matrix_cov(input, cov);
+  matrix_cov(A, cov);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
   printf("\t\tTime  %g, ", cpu_time_used);
@@ -259,22 +290,7 @@ void test_pca_whiten(void)  {
   /*
   Test if pca_whiten function works as expected
   */
-  size_t NSUB = 1000;
-  size_t NCOMP = 100;
-  size_t NVOX = 10000;
-  gsl_matrix *true_A = gsl_matrix_alloc(NSUB, NCOMP);
-  gsl_matrix *true_S = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *true_X = gsl_matrix_alloc(NSUB,NVOX);
-  gsl_matrix *white_x = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *white = gsl_matrix_alloc(NCOMP, NSUB);
-  gsl_matrix *dewhite = gsl_matrix_alloc(NSUB,NCOMP);
 
-  // Random gaussian mixing matrix A
-  random_matrix(true_A, 1.0, gsl_ran_gaussian);
-  // Random logistic mixing matrix S
-  random_matrix(true_S, 1.0, gsl_ran_logistic);
-  // X = AS
-  matrix_mmul(true_A, true_S, true_X);
   // PCA(X)
   start = omp_get_wtime();
   pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
@@ -301,45 +317,15 @@ void test_pca_whiten(void)  {
 
   gsl_matrix_free(reconstructed_x);
   gsl_matrix_free(cov);
-  gsl_matrix_free(white);
-  gsl_matrix_free(dewhite);
-  gsl_matrix_free(white_x);
-  gsl_matrix_free(true_X);
-  gsl_matrix_free(true_S);
-  gsl_matrix_free(true_A);
 
 }
 
 void test_w_update(void){
 
-  size_t NSUB = 1000;
-  size_t NCOMP = 100;
-  size_t NVOX = 10000;
-  gsl_matrix *true_A  = gsl_matrix_alloc(NSUB, NCOMP);
-  gsl_matrix *true_S  = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *true_X  = gsl_matrix_alloc(NSUB,NVOX);
-  gsl_matrix *white_x = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
-  gsl_matrix *dewhite = gsl_matrix_alloc(NSUB,NCOMP);
   gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
-  // Random gaussian mixing matrix A
-  random_matrix(true_A, 1.0, gsl_ran_gaussian);
-  // Random logistic mixing matrix S
-  random_matrix(true_S, 1.0, gsl_ran_logistic);
-  // X = AS
-  matrix_mmul(true_A, true_S, true_X);
-  // PCA(X)
 
-  gsl_matrix *old_true_X = gsl_matrix_alloc(NSUB,NVOX);
-  gsl_matrix_memcpy(old_true_X, true_X);
-  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
-
-  // Check if white_x was modified
-  if(gsl_matrix_equal(old_true_X, true_X)==0)
-    CU_FAIL("PCA_WHITEN modified its input!");
-  gsl_matrix_free(old_true_X);
 
   gsl_matrix_set_identity(weights);
   int error = 0;
@@ -360,66 +346,49 @@ void test_w_update(void){
   error = w_update(weights, white_x, bias, lrate);
   CU_ASSERT_EQUAL(error, 1);
 
-  gsl_matrix_free(true_A);
-  gsl_matrix_free(true_S);
-  gsl_matrix_free(true_X);
-  gsl_matrix_free(white_x);
-  gsl_matrix_free(white);
-  gsl_matrix_free(dewhite);
   gsl_matrix_free(weights);
+  gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
 }
 
 void test_infomax(void){
 
-  size_t NSUB = 400;
-  size_t NCOMP = 10;
-  size_t NVOX = 10000;
 
   gsl_matrix *estimated_a = gsl_matrix_alloc(NSUB,  NCOMP);
   gsl_matrix *estimated_s = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix *estimated_x = gsl_matrix_alloc(NSUB,  NVOX);
-  gsl_matrix *true_a      = gsl_matrix_alloc(NSUB,  NCOMP);
-  gsl_matrix *true_s      = gsl_matrix_alloc(NCOMP, NVOX);
-  gsl_matrix *true_x      = gsl_matrix_alloc(NSUB,  NVOX);
   gsl_matrix *cs          = gsl_matrix_alloc(NCOMP, NCOMP);
 
-  // Random gaussian mixing matrix A
-  random_matrix(true_a, 1.0, gsl_ran_gaussian);
-  // Random logistic mixing matrix S
-  random_matrix(true_s, 1.0, gsl_ran_logistic);
-  // matrix_apply_all(true_s, gsl_pow_3);
-  // X = AS
-  matrix_mmul(true_a, true_s, true_x);
   // A,S <- ICA(X, NCOMP)
-  ica(estimated_a, estimated_s, true_x, 0);
+  start = omp_get_wtime();
+  ica(estimated_a, estimated_s, true_X, 0);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tTime  %g, ", cpu_time_used);
   // Match by correlation
-  ica_match_gt(true_a, true_s, estimated_a, estimated_s);
+  ica_match_gt(true_A, true_S, estimated_a, estimated_s);
 
-  matrix_cross_corr_row(cs, true_s, estimated_s);
+  matrix_cross_corr_row(cs, true_S, estimated_s);
   printf("\nSource estimation accuracy");
   // print_matrix_corner(cs);
   matrix_apply_all(cs, absolute);
   gsl_vector_view diag = gsl_matrix_diagonal(cs);
   double avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
   printf("\n Average Accuracy: %.3f", avg);
-  if(avg < 0.7){
+  if(avg < 0.95){
     CU_FAIL("average source estiamtion accuracy too low.");
   }
-  matrix_cross_corr(cs, true_a, estimated_a);
+  matrix_cross_corr(cs, true_A, estimated_a);
   printf("\nLoading estimation accuracy");
   // print_matrix_corner(cs);
   matrix_apply_all(cs, absolute);
   diag = gsl_matrix_diagonal(cs);
   avg = gsl_stats_mean(diag.vector.data, diag.vector.stride, diag.vector.size);
   printf("\n Average Accuracy: %.3f", avg);
-  if(avg < 0.7){
+  if(avg < 0.95){
     CU_FAIL("average source estiamtion accuracy too low.");
   }
   //Clean
-  gsl_matrix_free(true_a);
-  gsl_matrix_free(true_s);
-  gsl_matrix_free(true_x);
   gsl_matrix_free(estimated_a);
   gsl_matrix_free(estimated_s);
   gsl_matrix_free(estimated_x);
