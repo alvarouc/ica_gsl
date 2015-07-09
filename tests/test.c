@@ -14,7 +14,7 @@
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 size_t NSUB = 1000;
-size_t NCOMP = 20;
+size_t NCOMP = 40;
 size_t NVOX = 10000;
 gsl_matrix *input, *true_A, *true_S, *true_X, *white_x, *white, *dewhite;
 double start, end;
@@ -328,7 +328,7 @@ void test_w_update(void){
     printf("\nSetting OPENBLAS_NUM_THREADS to 8");
     printf("\nSet the enviroment variable to your number of cores");
   }
-  
+
 
   gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);

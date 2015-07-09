@@ -3,7 +3,9 @@
 CC=gcc
 LIBS_TEST=-lcunit
 # LIBS_UTIL=-lgsl -lcblas -lm -fopenmp -llapacke
-LIBS_UTIL=-lgsl -lopenblas -lm -fopenmp -llapacke
+# LIBS_UTIL=-lgsl -lopenblas -lm -fopenmp -llapacke
+INC = -I/home/aulloa/src/openblas-op/include
+LIBS_UTIL=-lgsl -lm -fopenmp -llapacke -L/home/aulloa/src/openblas-op/lib -lopenblas
 CFLAGS= -Wall
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o
@@ -12,13 +14,13 @@ test: $(OBJ)
 	$(CC) $^ -o test $(CFLAGS) $(LIBS_TEST) $(LIBS_UTIL)
 
 util.o: ../util/util.c ../util/util.h
-	$(CC) -c ../util/util.c $(CFLAGS) $(LIBS_UTIL)
+	$(CC) -c $(INC) ../util/util.c $(CFLAGS) $(LIBS_UTIL)
 
 ica.o: ../ica.c ../ica.h
-	$(CC) -c ../ica.c $(CFLAGS) $(LIBS_UTIL)
+	$(CC) -c $(INC) ../ica.c $(CFLAGS) $(LIBS_UTIL)
 
 test.o: test.c
-	$(CC) -c test.c $(CFLAGS) $(LIBS_UTIL) $(LIBS_TEST)
+	$(CC) -c $(INC) test.c $(CFLAGS) $(LIBS_UTIL) $(LIBS_TEST)
 
 
 

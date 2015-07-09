@@ -103,17 +103,11 @@ int w_update(
   gsl_matrix *x_white,
   gsl_matrix *bias,
   double lrate){
-  // For number of components less than 1000 using one thread is faster
-  const char *nt;
-  nt = getenv("OPENBLAS_NUM_THREADS");
-  int MAX_THREAD = atoi(nt);
-  openblas_set_num_threads(1);
-
+  
   int error = 0;
   size_t i;
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
-  // int blas_threads = openblas_get_num_threads();
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
   gsl_matrix *ib = gsl_matrix_alloc(1,block);
   gsl_matrix_set_all( ib, 1.0);
@@ -138,7 +132,6 @@ int w_update(
   }
 
   size_t start;
-  // gsl_matrix *sub_x_white = gsl_matrix_alloc(NCOMP, block);
   gsl_matrix *unmixed     = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *unm_logit   = gsl_matrix_alloc(NCOMP,block);
   gsl_matrix *temp_I      = gsl_matrix_alloc(NCOMP,NCOMP);
@@ -165,9 +158,7 @@ int w_update(
     // sub_x_white = xwhite[:, permute[start:start+block]]
     sub_x_white_view = gsl_matrix_submatrix(shuffled_x_white, 0,start, NCOMP, block );
     // Compute unmixed = weights . sub_x_white + bias . ib
-    // openblas_set_num_threads(MAX_THREAD/4);
     matrix_mmul(weights, &sub_x_white_view.matrix, unmixed); //put OPENBLAS_NUM_THREADS to maximum here
-    // openblas_set_num_threads(1);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
       1.0, bias, ib, 1.0, unmixed);
     // Compute 1-2*logit
@@ -204,7 +195,7 @@ int w_update(
 
   }
   // set number of threads back to normal
-  openblas_set_num_threads(MAX_THREAD);
+  // openblas_set_num _threads(MAX_THREAD);
 
   //clean up
   gsl_rng_free (r);

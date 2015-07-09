@@ -5,7 +5,7 @@ This is an ICA implementation using the infomax algorithm with whitening and PCA
 
 Current Dependencies
  - GNU GSL
- - OpenBLAS
+ - OpenBLAS (Compile with "$make USE_OPENMP=1")
  - OpenMP
 
 The experiments folder contains a use example in the experiments/simple.c file.
