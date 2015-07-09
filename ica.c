@@ -9,6 +9,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <math.h>
+#include <omp.h>
 #include <gsl/gsl_permute_vector.h>
 
 double EPS = 1e-18;
@@ -102,11 +103,17 @@ int w_update(
   gsl_matrix *x_white,
   gsl_matrix *bias,
   double lrate){
+  // For number of components less than 1000 using one thread is faster
+  const char *nt;
+  nt = getenv("OPENBLAS_NUM_THREADS");
+  int MAX_THREAD = atoi(nt);
+  openblas_set_num_threads(1);
 
   int error = 0;
   size_t i;
   const size_t NVOX = x_white->size2;
   const size_t NCOMP = x_white->size1;
+  // int blas_threads = openblas_get_num_threads();
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
   gsl_matrix *ib = gsl_matrix_alloc(1,block);
   gsl_matrix_set_all( ib, 1.0);
@@ -154,11 +161,13 @@ int w_update(
       ones = gsl_matrix_alloc(block,1);
       gsl_matrix_set_all(ones, 1.0);
 
-    }
+      }
     // sub_x_white = xwhite[:, permute[start:start+block]]
     sub_x_white_view = gsl_matrix_submatrix(shuffled_x_white, 0,start, NCOMP, block );
     // Compute unmixed = weights . sub_x_white + bias . ib
-    matrix_mmul(weights, &sub_x_white_view.matrix, unmixed);
+    // openblas_set_num_threads(MAX_THREAD/4);
+    matrix_mmul(weights, &sub_x_white_view.matrix, unmixed); //put OPENBLAS_NUM_THREADS to maximum here
+    // openblas_set_num_threads(1);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
       1.0, bias, ib, 1.0, unmixed);
     // Compute 1-2*logit
@@ -192,8 +201,10 @@ int w_update(
       error = 1;
       break;
     }
-  }
 
+  }
+  // set number of threads back to normal
+  openblas_set_num_threads(MAX_THREAD);
 
   //clean up
   gsl_rng_free (r);
@@ -296,6 +307,17 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
 
 void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
 
+  /* Checking the existance of the enviroment variable
+  for controlling the number of threads used by openblas*/
+  int success = setenv ("OPENBLAS_NUM_THREADS", "8", 1);
+  if (success){
+    printf("\nSetting OPENBLAS_NUM_THREADS to 8");
+    printf("\nSet the enviroment variable to your number of cores");
+  }
+  else{
+
+  }
+
   const size_t NCOMP = A->size2;
   const size_t NSUB = X->size1;
   const size_t NVOX = X->size2;
@@ -304,11 +326,24 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
   gsl_matrix *white_X = gsl_matrix_alloc(NCOMP, NVOX);
   gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
   gsl_matrix *dewhite = gsl_matrix_alloc(NSUB, NCOMP);
+
+  double start, end;
+  double cpu_time_used;
   if (verbose) printf("\nPCA decomposition ...");
+  start = omp_get_wtime();
   pca_whiten(X, NCOMP, white_X, white, dewhite, 1);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tPCA Time  %g, ", cpu_time_used);
+
   if (verbose) printf("Done.");
   if (verbose) printf("\nINFOMAX ...");
+  if (verbose) printf("\nPCA decomposition ...");
+  start = omp_get_wtime();
   infomax(white_X, weights, S, verbose);
+  end = omp_get_wtime();
+  cpu_time_used = ((double) (end - start));
+  printf("\t\tInfomax Time  %g, ", cpu_time_used);
   if (verbose) printf("Done");
 
   matrix_inv(weights, inv_weights);
