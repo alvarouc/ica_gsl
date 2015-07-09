@@ -14,7 +14,7 @@
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 size_t NSUB = 1000;
-size_t NCOMP = 40;
+size_t NCOMP = 80;
 size_t NVOX = 10000;
 gsl_matrix *input, *true_A, *true_S, *true_X, *white_x, *white, *dewhite;
 double start, end;
@@ -423,7 +423,7 @@ int main()
    }
 
    pSuite_ica = CU_add_suite("Suite_ICA",
-    init_suite_ica, clean_suite_util);
+    init_suite_ica, clean_suite_ica);
    if (NULL == pSuite_ica) {
       CU_cleanup_registry();
       return CU_get_error();

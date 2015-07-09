@@ -103,7 +103,7 @@ int w_update(
   gsl_matrix *x_white,
   gsl_matrix *bias,
   double lrate){
-  
+
   int error = 0;
   size_t i;
   const size_t NVOX = x_white->size2;
@@ -124,7 +124,7 @@ int w_update(
   gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_vector_view arow;
-  //#pragma omp parallel for private(i,arow)
+  // #pragma omp parallel for private(i,arow)
   for (i = 0; i < x_white->size1; i++) {
     arow = gsl_matrix_row(shuffled_x_white,i);
     gsl_permute_vector (p, &arow.vector);
