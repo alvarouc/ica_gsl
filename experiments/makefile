@@ -3,7 +3,7 @@
 CC=gcc
 INC = -I/home/aulloa/src/openblas-op/include
 LIBS=-lgsl -lm -fopenmp -llapacke -L/home/aulloa/src/openblas-op/lib -lopenblas
-CFLAGS= -Wall -O3
+CFLAGS= -Wall -Ofast
 OBJ = simple.o ica.o util.o
 
 simple: $(OBJ)

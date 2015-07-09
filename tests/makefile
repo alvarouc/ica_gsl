@@ -6,7 +6,7 @@ LIBS_TEST=-lcunit
 # LIBS_UTIL=-lgsl -lopenblas -lm -fopenmp -llapacke
 INC = -I/home/aulloa/src/openblas-op/include
 LIBS_UTIL=-lgsl -lm -fopenmp -L/home/aulloa/src/openblas-op/lib -lopenblas -llapacke
-CFLAGS= -Wall
+CFLAGS= -Wall -Ofast
 # DEPS = ../util/utils.h
 OBJ = util.o test.o ica.o
 
