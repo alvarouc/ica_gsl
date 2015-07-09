@@ -14,7 +14,7 @@
 // Input matrix
 size_t NROW = 500, NCOL = 100000;
 size_t NSUB = 1000;
-size_t NCOMP = 80;
+size_t NCOMP = 100;
 size_t NVOX = 10000;
 gsl_matrix *input, *true_A, *true_S, *true_X, *white_x, *white, *dewhite;
 double start, end;
@@ -443,8 +443,8 @@ int main()
 (NULL == CU_add_test(pSuite_util,"test of matrix_sum()", test_matrix_sum)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_apply_all()", test_matrix_apply_all)) ||
 (NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) ||
-(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))||
-(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))
+(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))/*||
+(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))*/
       )
    {
       CU_cleanup_registry();

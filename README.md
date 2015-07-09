@@ -9,3 +9,6 @@ Current Dependencies
  - OpenMP
 
 The experiments folder contains a use example in the experiments/simple.c file.
+
+## Configuration
+In the makefile please change the include and library directories to your correspondent folder. 
