@@ -48,25 +48,21 @@ void pca_whiten(
   matrix_cov(input, evec_cov);
   // Set up eigen decomposition
   gsl_vector *eval = gsl_vector_alloc(evec_cov->size1); //eigen values
-  // gsl_matrix *evec = gsl_matrix_alloc(cov->size1, cov->size2); //eigen vector
 
-  double start, end, cpu_time_used;
-
-  start = omp_get_wtime();
+  // double start, end, cpu_time_used;
+  // start = omp_get_wtime();
   //Compute eigen values with LAPACK
-  LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
+  LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
     evec_cov->size1, evec_cov->data, evec_cov->size1, eval->data);
-  // gsl_matrix_memcpy(evec,cov);
-
 
   //Compute eigen values with GSL
   // gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1 );
   // gsl_eigen_symmv(cov, eval, evec, w);
   // gsl_matrix_free(cov);
   // gsl_eigen_symmv_free(w);
-  end = omp_get_wtime();
-  cpu_time_used = ((double) (end - start));
-  printf("\nTime used on EIGEN: %g\n", cpu_time_used);
+  // end = omp_get_wtime();
+  // cpu_time_used = ((double) (end - start));
+  // printf("\nTime used on EIGEN: %g\n", cpu_time_used);
 
 
   // sort eigen values
@@ -109,6 +105,7 @@ int w_update(
   gsl_matrix *weights,
   gsl_matrix *x_white,
   gsl_matrix *bias,
+  gsl_matrix *shuffled_x_white, //work space for shuffled x_white
   double lrate){
 
   int error = 0;
@@ -128,10 +125,10 @@ int w_update(
   r = gsl_rng_alloc (T);
   gsl_permutation_init (p);
   gsl_ran_shuffle (r, p->data, NVOX, sizeof(size_t));
-  gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
+  // gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_vector_view arow;
-  // #pragma omp parallel for private(i,arow)
+  #pragma omp parallel for private(i,arow)
   for (i = 0; i < x_white->size1; i++) {
     arow = gsl_matrix_row(shuffled_x_white,i);
     gsl_permute_vector (p, &arow.vector);
@@ -165,7 +162,7 @@ int w_update(
     // sub_x_white = xwhite[:, permute[start:start+block]]
     sub_x_white_view = gsl_matrix_submatrix(shuffled_x_white, 0,start, NCOMP, block );
     // Compute unmixed = weights . sub_x_white + bias . ib
-    matrix_mmul(weights, &sub_x_white_view.matrix, unmixed); //put OPENBLAS_NUM_THREADS to maximum here
+    matrix_mmul(weights, &sub_x_white_view.matrix, unmixed);
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans,
       1.0, bias, ib, 1.0, unmixed);
     // Compute 1-2*logit
@@ -213,7 +210,7 @@ int w_update(
   gsl_matrix_free(temp_I);
   gsl_matrix_free(ones);
   gsl_matrix_free(unm_logit);
-  gsl_matrix_free(shuffled_x_white);
+  // gsl_matrix_free(shuffled_x_white);
   return(error);
 
 }
@@ -235,6 +232,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   gsl_matrix *d_weights      = gsl_matrix_calloc(NCOMP,NCOMP);
   gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *old_d_weights  = gsl_matrix_calloc(NCOMP,NCOMP);
+  gsl_matrix *shuffled_x_white  = gsl_matrix_calloc(NCOMP,x_white->size2);
 
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
@@ -244,7 +242,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   size_t step = 1;
   int error = 0;
   while( (step < MAX_STEP) && (change > W_STOP)){
-    error = w_update(weights, x_white, bias, lrate);
+    error = w_update(weights, x_white, bias, shuffled_x_white, lrate);
     if (error==1 || error==2){
       // It blowed up! RESTART!
       step = 1;
@@ -300,6 +298,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
   gsl_matrix_free(d_weights);
+  gsl_matrix_free(shuffled_x_white);
 
 }
 
@@ -307,14 +306,7 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
 
   /* Checking the existance of the enviroment variable
   for controlling the number of threads used by openblas*/
-  int success = setenv ("OPENBLAS_NUM_THREADS", "8", 1);
-  if (success){
-    printf("\nSetting OPENBLAS_NUM_THREADS to 8");
-    printf("\nSet the enviroment variable to your number of cores");
-  }
-  else{
 
-  }
 
   const size_t NCOMP = A->size2;
   const size_t NSUB = X->size1;
@@ -325,23 +317,14 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
   gsl_matrix *white   = gsl_matrix_alloc(NCOMP, NSUB);
   gsl_matrix *dewhite = gsl_matrix_alloc(NSUB, NCOMP);
 
-  double start, end;
-  double cpu_time_used;
-  if (verbose) printf("\nPCA decomposition ...");
-  start = omp_get_wtime();
+
   pca_whiten(X, NCOMP, white_X, white, dewhite, 1);
-  end = omp_get_wtime();
-  cpu_time_used = ((double) (end - start));
-  printf("\t\tPCA Time  %g, ", cpu_time_used);
+
 
   if (verbose) printf("Done.");
   if (verbose) printf("\nINFOMAX ...");
   if (verbose) printf("\nPCA decomposition ...");
-  start = omp_get_wtime();
   infomax(white_X, weights, S, verbose);
-  end = omp_get_wtime();
-  cpu_time_used = ((double) (end - start));
-  printf("\t\tInfomax Time  %g, ", cpu_time_used);
   if (verbose) printf("Done");
 
   matrix_inv(weights, inv_weights);

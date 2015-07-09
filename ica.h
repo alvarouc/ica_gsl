@@ -12,7 +12,7 @@ void pca_whiten(gsl_matrix *input,  size_t const NCOMP,
                 gsl_matrix *dewhite,
                 int demean);
 int w_update(gsl_matrix *unmixer, gsl_matrix *x_white,
-              gsl_matrix *bias1, double lrate);
+              gsl_matrix *bias1, gsl_matrix* shuffled_x_white, double lrate);
 
 void infomax(gsl_matrix *x_white, gsl_matrix *A, gsl_matrix *S, int verbose);
 void ica(gsl_matrix *mixing, gsl_matrix *sources, gsl_matrix *data, int verbose);

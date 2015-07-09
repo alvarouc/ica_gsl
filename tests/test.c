@@ -15,7 +15,7 @@
 size_t NROW = 500, NCOL = 100000;
 size_t NSUB = 1000;
 size_t NCOMP = 100;
-size_t NVOX = 10000;
+size_t NVOX = 50000;
 gsl_matrix *input, *true_A, *true_S, *true_X, *white_x, *white, *dewhite;
 double start, end;
 double cpu_time_used;
@@ -333,6 +333,7 @@ void test_w_update(void){
   gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
+  gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
 
 
   gsl_matrix_set_identity(weights);
@@ -341,7 +342,7 @@ void test_w_update(void){
   gsl_matrix_memcpy(old_weights, weights);
 
   start = omp_get_wtime();
-  error = w_update(weights, white_x, bias, lrate);
+  error = w_update(weights, white_x, bias, shuffled_x_white, lrate);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
   printf("\t\tTime  %g, ", cpu_time_used);
@@ -351,12 +352,13 @@ void test_w_update(void){
     CU_FAIL("Weights have not been updated");
 
   lrate = 1000;
-  error = w_update(weights, white_x, bias, lrate);
+  error = w_update(weights, white_x, bias,shuffled_x_white, lrate);
   CU_ASSERT_EQUAL(error, 1);
 
   gsl_matrix_free(weights);
   gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
+  gsl_matrix_free(shuffled_x_white);
 }
 
 void test_infomax(void){
@@ -443,8 +445,8 @@ int main()
 (NULL == CU_add_test(pSuite_util,"test of matrix_sum()", test_matrix_sum)) ||
 (NULL == CU_add_test(pSuite_util,"test of matrix_apply_all()", test_matrix_apply_all)) ||
 (NULL == CU_add_test(pSuite_ica,"test whitening",test_pca_whiten)) ||
-(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))/*||
-(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))*/
+(NULL == CU_add_test(pSuite_ica,"test mixing matrix update",test_w_update))||
+(NULL == CU_add_test(pSuite_ica,"test infomax",test_infomax))
       )
    {
       CU_cleanup_registry();
