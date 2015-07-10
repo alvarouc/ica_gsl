@@ -88,6 +88,7 @@ int w_update(
   gsl_matrix *bias,
   gsl_matrix *shuffled_x_white, //work space for shuffled x_white
   double lrate){
+  
 
   int error = 0;
   size_t i;

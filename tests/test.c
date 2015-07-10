@@ -298,7 +298,7 @@ void test_pca_whiten(void)  {
 
   // PCA(X)
   start = omp_get_wtime();
-  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
+  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 1);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
   printf("\t\t\tTime  %g, ", cpu_time_used);
@@ -314,8 +314,13 @@ void test_pca_whiten(void)  {
   matrix_mmul(dewhite, white_x, reconstructed_x);
 
   gsl_matrix_sub(reconstructed_x, true_X);
+<<<<<<< HEAD
   double reconstruction_error = matrix_norm(reconstructed_x)/NVOX/NSUB;
   if(reconstruction_error>1){
+=======
+  double reconstruction_error = matrix_norm(reconstructed_x)/(double)NVOX/(double)NSUB;
+  if(reconstruction_error>0.1){
+>>>>>>> a0ba163796a83e345cccc9370ca5f1e3fa9fbaf1
     printf("\nError : %g\n", reconstruction_error);
     CU_FAIL("PCA reconstruction error is too high");
   }
@@ -326,14 +331,6 @@ void test_pca_whiten(void)  {
 }
 
 void test_w_update(void){
-
-  int success = setenv ("OPENBLAS_NUM_THREADS", "8", 1);
-  if (success){
-    printf("\nSetting OPENBLAS_NUM_THREADS to 8");
-    printf("\nSet the enviroment variable to your number of cores");
-  }
-
-
   gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
