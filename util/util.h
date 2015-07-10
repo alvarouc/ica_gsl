@@ -10,9 +10,13 @@
 #include <gsl/gsl_eigen.h>
 
 // operations
+// 2.05 sec
 void rr_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
+// 2.24 sec
 void dc_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
+// 3.4 sec
 void si_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP);
+// 2.06 sec
 void xx_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
 
 void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B);

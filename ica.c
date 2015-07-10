@@ -49,11 +49,7 @@ void pca_whiten(
   gsl_matrix *evec = gsl_matrix_alloc(NSUB, NCOMP);
 
   rr_eig(cov, eval, evec, NCOMP );
-
   //Computing whitening matrix
-
-  // gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , NSUB, NCOMP);
-  // gsl_matrix_transpose_memcpy(white, &temp.matrix);
   gsl_matrix_transpose_memcpy(white, evec);
   gsl_vector_view v;
   double e;
@@ -66,7 +62,7 @@ void pca_whiten(
     gsl_blas_dscal(1/sqrt(e), &v.vector);
   }
   // Computing dewhitening matrix
-  gsl_matrix_memcpy(dewhite, &temp.matrix);
+  gsl_matrix_memcpy(dewhite, evec);
 
   // evec eval^{1/2}
   // #pragma omp parallel for private(i,e,v)

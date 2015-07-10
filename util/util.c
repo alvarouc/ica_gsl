@@ -33,11 +33,15 @@ void si_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
   // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
   // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
   size_t NSUB = sym->size1;
+  gsl_vector *eval_temp =gsl_vector_alloc(NSUB);
   LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
-    NSUB, sym->data, NSUB, eval->data);
-  gsl_eigen_symmv_sort (eval, sym, GSL_EIGEN_SORT_ABS_DESC);
+    NSUB, sym->data, NSUB, eval_temp->data);
+  gsl_eigen_symmv_sort (eval_temp, sym, GSL_EIGEN_SORT_ABS_DESC);
   gsl_matrix_view temp = gsl_matrix_submatrix(sym, 0,0 , NSUB, NCOMP);
   gsl_matrix_memcpy(evec,&temp.matrix);
+  gsl_vector_view temp_vec = gsl_vector_subvector(eval_temp, 0, NCOMP);
+  gsl_vector_memcpy(eval, &temp_vec.vector);
+  gsl_vector_free(eval_temp);
 }
 
 void dc_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
@@ -45,11 +49,15 @@ void dc_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
   // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
   // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
   size_t NSUB = sym->size1;
+  gsl_vector *eval_temp =gsl_vector_alloc(NSUB);
   LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
-    NSUB, sym->data, NSUB, eval->data);
-  gsl_eigen_symmv_sort (eval, sym, GSL_EIGEN_SORT_ABS_DESC);
+    NSUB, sym->data, NSUB, eval_temp->data);
+  gsl_eigen_symmv_sort (eval_temp, sym, GSL_EIGEN_SORT_ABS_DESC);
   gsl_matrix_view temp = gsl_matrix_submatrix(sym, 0,0 , NSUB, NCOMP);
   gsl_matrix_memcpy(evec,&temp.matrix);
+  gsl_vector_view temp_vec = gsl_vector_subvector(eval_temp, 0, NCOMP);
+  gsl_vector_memcpy(eval, &temp_vec.vector);
+  gsl_vector_free(eval_temp);
 }
 
 void rr_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP ){
