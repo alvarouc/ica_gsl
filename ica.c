@@ -118,7 +118,7 @@ int w_update(
   gsl_matrix_set_all(ones, 1.0);
   double max;
   gsl_matrix_view sub_x_white_view;
-  gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
+  // gsl_matrix *d_unmixer = gsl_matrix_alloc(NCOMP,NCOMP);
   for (start = 0; start < NVOX; start = start + block) {
     if (start + block > NVOX-1){
       block = NVOX-start;
@@ -150,10 +150,10 @@ int w_update(
                     1.0, unm_logit, unmixed,
                     (double)block , temp_I);
     // BE CAREFUL with aliasing here! use d_unmixer if problems arise
-    gsl_matrix_memcpy(d_unmixer, weights);
+    // gsl_matrix_memcpy(d_unmixer, weights);
     // (2) weights = weights + lrate*temp_I*weights
     gsl_blas_dgemm( CblasNoTrans,CblasNoTrans,
-                    lrate, temp_I, d_unmixer,
+                    lrate, temp_I, weights,
                     1.0, weights);
     // Update the bias
     gsl_blas_dgemm( CblasNoTrans, CblasNoTrans,
@@ -179,7 +179,7 @@ int w_update(
   //clean up
   // gsl_rng_free (r);
   // gsl_permutation_free (p);
-  gsl_matrix_free(d_unmixer);
+  // gsl_matrix_free(d_unmixer);
   gsl_matrix_free(ib);
   gsl_matrix_free(unmixed);
   gsl_matrix_free(temp_I);
@@ -218,7 +218,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *old_d_weights  = gsl_matrix_calloc(NCOMP,NCOMP);
   gsl_matrix *shuffled_x_white  = gsl_matrix_calloc(NCOMP,x_white->size2);
-  gsl_matrix_memcpy(shuffled_x_white, x_white); 
+  gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
   double lrate = 0.005/log((double)NCOMP);
