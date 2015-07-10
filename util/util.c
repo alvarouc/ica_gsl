@@ -17,6 +17,17 @@ double absolute(double value) {
   }
 }
 
+void gsl_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
+  //Compute eigen values with GSL
+  size_t NSUB = sym->size1;
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(NSUB);
+  gsl_eigen_symmv(sym, eval, evec, w);
+  gsl_eigen_symmv_free(w);
+  gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
+  gsl_matrix_view temp = gsl_matrix_submatrix(sym, 0,0 , NSUB, NCOMP);
+  gsl_matrix_memcpy(evec,&temp.matrix);
+}
+
 void si_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
   // simple Eigen decomposition
   // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
