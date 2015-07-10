@@ -246,7 +246,14 @@ void print_vector_head(gsl_vector *input){
   for (i = 0; i < N; i++){
       printf("%g ", gsl_vector_get(input,i));
   }
-  printf(" ... ]\n\n");
+  printf(" ... \n");
+  // print last ten
+  if (input->size>20){
+      for (i = 10; i > 0; i--) {
+        printf("%g ", gsl_vector_get(input, input->size-i));
+      }
+      printf("]\n\n");
+  }
 
 }
 

@@ -34,31 +34,42 @@ void pca_whiten(
   int demean){
 
   // get input reference
-    size_t NSUB = input->size1;
+  size_t NSUB = input->size1;
 
   // demean input matrix
   if (demean){
     matrix_demean(input);
   }
 
-
-
   // Convariance Matrix
-  gsl_matrix *evec_cov = gsl_matrix_alloc(input->size1, input->size1);
-  matrix_cov(input, evec_cov);
+  gsl_matrix *cov = gsl_matrix_alloc(NSUB, NSUB);
+  matrix_cov(input, cov);
   // Set up eigen decomposition
-  gsl_vector *eval = gsl_vector_alloc(evec_cov->size1); //eigen values
+  gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
+  gsl_matrix *evec = gsl_matrix_alloc(NSUB, NCOMP);
 
+  // Divide and conquer
+  // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
+  // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
   // double start, end, cpu_time_used;
   // start = omp_get_wtime();
   //Compute eigen values with LAPACK
-  LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
-    evec_cov->size1, evec_cov->data, evec_cov->size1, eval->data);
+  // LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
+  //   NSUB, cov->data, NSUB, eval->data);
+  // gsl_matrix_memcpy(evec,cov);
+
+  // Relative robust
+  lapack_int m=0;
+  double abstol=-1.0, vl=0.0, vu=0.0;
+  lapack_int *ifail = (lapack_int *)LAPACKE_malloc( sizeof(lapack_int) * NSUB );
+  LAPACKE_dsyevr(LAPACK_ROW_MAJOR, 'V', 'I', 'U',
+    NSUB, cov->data, NSUB, vl, vu, NSUB-NCOMP+1, NSUB,
+    abstol, &m, eval->data, evec->data, NCOMP, ifail);
+  // printf("\n-- Found %d components\n", m);
 
   //Compute eigen values with GSL
-  // gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc (cov->size1 );
+  // gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(NSUB);
   // gsl_eigen_symmv(cov, eval, evec, w);
-  // gsl_matrix_free(cov);
   // gsl_eigen_symmv_free(w);
   // end = omp_get_wtime();
   // cpu_time_used = ((double) (end - start));
@@ -66,10 +77,11 @@ void pca_whiten(
 
 
   // sort eigen values
-  gsl_eigen_symmv_sort (eval, evec_cov, GSL_EIGEN_SORT_ABS_DESC);
+  // gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
   // reduce number of components
   //Computing whitening matrix
-  gsl_matrix_view temp = gsl_matrix_submatrix(evec_cov, 0,0 , NSUB, NCOMP);
+
+  gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , NSUB, NCOMP);
   gsl_matrix_transpose_memcpy(white, &temp.matrix);
   gsl_vector_view v;
   double e;
@@ -96,7 +108,8 @@ void pca_whiten(
   gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,
     white, input, 0.0, x_white);
 
-  gsl_matrix_free(evec_cov);
+  gsl_matrix_free(cov);
+  gsl_matrix_free(evec);
   gsl_vector_free(eval);
 
 }
