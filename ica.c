@@ -88,7 +88,7 @@ int w_update(
   gsl_matrix *bias,
   gsl_matrix *shuffled_x_white, //work space for shuffled x_white
   double lrate){
-  
+
 
   int error = 0;
   size_t i;
@@ -318,9 +318,3 @@ void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){
   gsl_matrix_free(dewhite);
 
 }
-
-/*
-void infomax1(double *x_white){
-
-}
-*/

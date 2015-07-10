@@ -314,13 +314,8 @@ void test_pca_whiten(void)  {
   matrix_mmul(dewhite, white_x, reconstructed_x);
 
   gsl_matrix_sub(reconstructed_x, true_X);
-<<<<<<< HEAD
-  double reconstruction_error = matrix_norm(reconstructed_x)/NVOX/NSUB;
-  if(reconstruction_error>1){
-=======
   double reconstruction_error = matrix_norm(reconstructed_x)/(double)NVOX/(double)NSUB;
-  if(reconstruction_error>0.1){
->>>>>>> a0ba163796a83e345cccc9370ca5f1e3fa9fbaf1
+  if(reconstruction_error>1){
     printf("\nError : %g\n", reconstruction_error);
     CU_FAIL("PCA reconstruction error is too high");
   }
