@@ -6,6 +6,7 @@
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_permutation.h>
 #include <omp.h>
+#include <lapacke.h>
 
 double absolute(double value) {
   if (value < 0) {
@@ -15,6 +16,42 @@ double absolute(double value) {
     return value;
   }
 }
+
+void si_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
+  // simple Eigen decomposition
+  // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
+  // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
+  size_t NSUB = sym->size1;
+  LAPACKE_dsyev(LAPACK_ROW_MAJOR, 'V', 'U',
+    NSUB, sym->data, NSUB, eval->data);
+  gsl_eigen_symmv_sort (eval, sym, GSL_EIGEN_SORT_ABS_DESC);
+  gsl_matrix_view temp = gsl_matrix_submatrix(sym, 0,0 , NSUB, NCOMP);
+  gsl_matrix_memcpy(evec,&temp.matrix);
+}
+
+void dc_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP){
+  // Divide and conquer Eigen decomposition
+  // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
+  // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
+  size_t NSUB = sym->size1;
+  LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
+    NSUB, sym->data, NSUB, eval->data);
+  gsl_eigen_symmv_sort (eval, sym, GSL_EIGEN_SORT_ABS_DESC);
+  gsl_matrix_view temp = gsl_matrix_submatrix(sym, 0,0 , NSUB, NCOMP);
+  gsl_matrix_memcpy(evec,&temp.matrix);
+}
+
+void rr_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP ){
+  // Relative robust Eigen decomposition
+  size_t NSUB = sym->size1;
+  lapack_int m=0;
+  double abstol=-1.0, vl=0.0, vu=0.0;
+  lapack_int *ifail = (lapack_int *)LAPACKE_malloc( sizeof(lapack_int) * NSUB );
+  LAPACKE_dsyevr(LAPACK_ROW_MAJOR, 'V', 'I', 'U',
+    NSUB, sym->data, NSUB, vl, vu, NSUB-NCOMP+1, NSUB,
+    abstol, &m, eval->data, evec->data, NCOMP, ifail);
+}
+
 
 void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   gsl_matrix *esti_a, gsl_matrix *esti_s){

@@ -43,7 +43,7 @@ int init_suite_ica(void){
   white = gsl_matrix_alloc(NCOMP, NSUB);
   dewhite = gsl_matrix_alloc(NSUB,NCOMP);
   gsl_matrix *noise = gsl_matrix_alloc(NSUB, NVOX);
-  random_matrix(noise, 0.5, gsl_ran_gaussian);
+  random_matrix(noise, 1.0, gsl_ran_gaussian);
   // Random gaussian mixing matrix A
   random_matrix(true_A, 1.0, gsl_ran_gaussian);
   // Random logistic mixing matrix S

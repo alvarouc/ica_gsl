@@ -48,15 +48,6 @@ void pca_whiten(
   gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
   gsl_matrix *evec = gsl_matrix_alloc(NSUB, NCOMP);
 
-  // Divide and conquer
-  // gsl_matrix *evec = gsl_matrix_alloc(NSUB, NSUB);
-  // gsl_vector *eval = gsl_vector_alloc(NCOMP); //eigen values
-  // double start, end, cpu_time_used;
-  // start = omp_get_wtime();
-  //Compute eigen values with LAPACK
-  // LAPACKE_dsyevd(LAPACK_ROW_MAJOR, 'V', 'U',
-  //   NSUB, cov->data, NSUB, eval->data);
-  // gsl_matrix_memcpy(evec,cov);
 
   // Relative robust
   lapack_int m=0;
@@ -74,10 +65,10 @@ void pca_whiten(
   // end = omp_get_wtime();
   // cpu_time_used = ((double) (end - start));
   // printf("\nTime used on EIGEN: %g\n", cpu_time_used);
-
-
   // sort eigen values
   // gsl_eigen_symmv_sort (eval, evec, GSL_EIGEN_SORT_ABS_DESC);
+
+
   // reduce number of components
   //Computing whitening matrix
 
