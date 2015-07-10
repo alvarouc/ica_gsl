@@ -12,10 +12,10 @@ simple: $(OBJ)
 util.o: ../util/util.c ../util/util.h
 	$(CC) $(INC) -c ../util/util.c $(CFLAGS) $(LIBS)
 
-ica.o: ../ica.c ../ica.h
+ica.o: ../ica.c ../ica.h util.o
 	$(CC) $(INC) -c ../ica.c $(CFLAGS) $(LIBS)
 
-simple.o: simple.c
+simple.o: simple.c util.o ica.o
 	$(CC) $(INC) -c simple.c $(CFLAGS) $(LIBS)
 
 .PHONY: clean

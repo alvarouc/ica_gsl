@@ -42,12 +42,16 @@ int init_suite_ica(void){
   white_x = gsl_matrix_alloc(NCOMP, NVOX);
   white = gsl_matrix_alloc(NCOMP, NSUB);
   dewhite = gsl_matrix_alloc(NSUB,NCOMP);
+  gsl_matrix *noise = gsl_matrix_alloc(NSUB, NVOX);
+  random_matrix(noise, 1.0, gsl_ran_gaussian);
   // Random gaussian mixing matrix A
   random_matrix(true_A, 1.0, gsl_ran_gaussian);
   // Random logistic mixing matrix S
   random_matrix(true_S, 1.0, gsl_ran_logistic);
   // X = AS
   matrix_mmul(true_A, true_S, true_X);
+  gsl_matrix_add(true_X, noise);
+  gsl_matrix_free(noise);
 
   return 0;
 }
@@ -306,14 +310,14 @@ void test_pca_whiten(void)  {
   gsl_matrix_sub(cov, expected_cov);
   CU_ASSERT(matrix_norm(cov)<1e-6);
   //test reconstruction error
-  gsl_matrix *reconstructed_x = gsl_matrix_alloc(true_X->size1, true_X->size2);
+  gsl_matrix *reconstructed_x = gsl_matrix_alloc(NSUB, NVOX);
   matrix_mmul(dewhite, white_x, reconstructed_x);
 
   gsl_matrix_sub(reconstructed_x, true_X);
-  double reconstruction_error = matrix_norm(reconstructed_x);
-  if(reconstruction_error>1e-6){
-    CU_FAIL("PCA reconstruction error is too high");
+  double reconstruction_error = matrix_norm(reconstructed_x)/NVOX/NSUB;
+  if(reconstruction_error>1e-2){
     printf("\nError : %g\n", reconstruction_error);
+    CU_FAIL("PCA reconstruction error is too high");
   }
 
   gsl_matrix_free(reconstructed_x);
