@@ -101,7 +101,7 @@ int w_update(
 
   gsl_ran_shuffle (r, p->data, NVOX, sizeof(size_t));
   // gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
-  gsl_matrix_memcpy(shuffled_x_white, x_white);
+  // gsl_matrix_memcpy(shuffled_x_white, x_white);
   gsl_vector_view arow;
   #pragma omp parallel for private(i,arow)
   for (i = 0; i < x_white->size1; i++) {
@@ -218,7 +218,7 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   gsl_matrix *temp_change    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *old_d_weights  = gsl_matrix_calloc(NCOMP,NCOMP);
   gsl_matrix *shuffled_x_white  = gsl_matrix_calloc(NCOMP,x_white->size2);
-
+  gsl_matrix_memcpy(shuffled_x_white, x_white); 
   gsl_matrix_set_identity(weights);
   gsl_matrix_set_identity(old_weights);
   double lrate = 0.005/log((double)NCOMP);

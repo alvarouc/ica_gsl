@@ -330,6 +330,7 @@ void test_w_update(void){
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
+  gsl_matrix_memcpy(shuffled_x_white, white_x); 
 
   //getting permutation vector
   const gsl_rng_type * T;
