@@ -29,8 +29,8 @@ void pca_whiten(
   gsl_matrix *input,// NOBS x NVOX
   size_t const NCOMP, //
   gsl_matrix *x_white, // NCOMP x NVOX
-  gsl_matrix *white, // NCOMP x NCOMP
-  gsl_matrix *dewhite, //NOBS x NVOX
+  gsl_matrix *white, // NCOMP x NSUB
+  gsl_matrix *dewhite, //NSUB x NCOMP
   int demean){
 
   // get input reference
@@ -54,8 +54,8 @@ void pca_whiten(
   gsl_vector_view v;
   double e;
   size_t i;
-  // eval^{-1/2} evec^T
-  // #pragma omp parallel for private(i,e,v)
+  // white = eval^{-1/2} evec^T
+  #pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_row(white,i);
@@ -64,8 +64,8 @@ void pca_whiten(
   // Computing dewhitening matrix
   gsl_matrix_memcpy(dewhite, evec);
 
-  // evec eval^{1/2}
-  // #pragma omp parallel for private(i,e,v)
+  // dewhite = evec eval^{1/2}
+  #pragma omp parallel for private(i,e,v)
   for (i = 0; i < NCOMP; i++) {
     e = gsl_vector_get(eval,i);
     v = gsl_matrix_column(dewhite,i);
@@ -87,8 +87,9 @@ int w_update(
   gsl_matrix *x_white,
   gsl_matrix *bias,
   gsl_matrix *shuffled_x_white, //work space for shuffled x_white
+  gsl_permutation *p, // random permutation
+  gsl_rng *r, // random stream from gsl
   double lrate){
-
 
   int error = 0;
   size_t i;
@@ -97,15 +98,7 @@ int w_update(
   size_t block = (size_t)floor(sqrt(NVOX/3.0));
   gsl_matrix *ib = gsl_matrix_alloc(1,block);
   gsl_matrix_set_all( ib, 1.0);
-  //getting permutation vector
 
-  const gsl_rng_type * T;
-  gsl_rng * r;
-  gsl_permutation * p = gsl_permutation_alloc (NVOX);
-  // gsl_rng_env_setup();
-  T = gsl_rng_default;
-  r = gsl_rng_alloc (T);
-  gsl_permutation_init (p);
   gsl_ran_shuffle (r, p->data, NVOX, sizeof(size_t));
   // gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
   gsl_matrix_memcpy(shuffled_x_white, x_white);
@@ -184,8 +177,8 @@ int w_update(
   // openblas_set_num _threads(MAX_THREAD);
 
   //clean up
-  gsl_rng_free (r);
-  gsl_permutation_free (p);
+  // gsl_rng_free (r);
+  // gsl_permutation_free (p);
   gsl_matrix_free(d_unmixer);
   gsl_matrix_free(ib);
   gsl_matrix_free(unmixed);
@@ -207,8 +200,18 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
     S : source matrix
   */
   // int verbose = 1; //true
-
   size_t NCOMP = x_white->size1;
+  size_t NVOX = x_white->size2;
+
+  //getting permutation vector
+  const gsl_rng_type * T;
+  gsl_rng * r;
+  gsl_permutation * p = gsl_permutation_alloc (NVOX);
+  // gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+  gsl_permutation_init (p);
+
   gsl_matrix *old_weights    = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *bias           = gsl_matrix_calloc(NCOMP, 1);
   gsl_matrix *d_weights      = gsl_matrix_calloc(NCOMP,NCOMP);
@@ -224,7 +227,8 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   size_t step = 1;
   int error = 0;
   while( (step < MAX_STEP) && (change > W_STOP)){
-    error = w_update(weights, x_white, bias, shuffled_x_white, lrate);
+    error = w_update(weights, x_white, bias,
+      shuffled_x_white, p, r, lrate);
     if (error==1 || error==2){
       // It blowed up! RESTART!
       step = 1;
@@ -281,7 +285,8 @@ void infomax(gsl_matrix *x_white, gsl_matrix *weights, gsl_matrix *S, int  verbo
   gsl_matrix_free(bias);
   gsl_matrix_free(d_weights);
   gsl_matrix_free(shuffled_x_white);
-
+  gsl_rng_free (r);
+  gsl_permutation_free (p);
 }
 
 void ica(gsl_matrix *A, gsl_matrix *S, gsl_matrix *X, int verbose){

@@ -331,6 +331,14 @@ void test_w_update(void){
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
   gsl_matrix *shuffled_x_white = gsl_matrix_alloc(NCOMP,NVOX);
 
+  //getting permutation vector
+  const gsl_rng_type * T;
+  gsl_rng * r;
+  gsl_permutation * p = gsl_permutation_alloc (NVOX);
+  // gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+  gsl_permutation_init (p);
 
   gsl_matrix_set_identity(weights);
   int error = 0;
@@ -338,7 +346,7 @@ void test_w_update(void){
   gsl_matrix_memcpy(old_weights, weights);
 
   start = omp_get_wtime();
-  error = w_update(weights, white_x, bias, shuffled_x_white, lrate);
+  error = w_update(weights, white_x, bias, shuffled_x_white, p,r, lrate);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
   printf("\t\tTime  %g, ", cpu_time_used);
@@ -348,13 +356,15 @@ void test_w_update(void){
     CU_FAIL("Weights have not been updated");
 
   lrate = 1000;
-  error = w_update(weights, white_x, bias,shuffled_x_white, lrate);
+  error = w_update(weights, white_x, bias,shuffled_x_white,p,r, lrate);
   CU_ASSERT_EQUAL(error, 1);
 
   gsl_matrix_free(weights);
   gsl_matrix_free(old_weights);
   gsl_matrix_free(bias);
   gsl_matrix_free(shuffled_x_white);
+  gsl_rng_free (r);
+  gsl_permutation_free (p);
 }
 
 void test_infomax(void){
