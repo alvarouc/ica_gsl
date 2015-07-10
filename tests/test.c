@@ -298,7 +298,7 @@ void test_pca_whiten(void)  {
 
   // PCA(X)
   start = omp_get_wtime();
-  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 0);
+  pca_whiten(true_X, NCOMP, white_x, white, dewhite, 1);
   end = omp_get_wtime();
   cpu_time_used = ((double) (end - start));
   printf("\t\t\tTime  %g, ", cpu_time_used);
@@ -326,14 +326,6 @@ void test_pca_whiten(void)  {
 }
 
 void test_w_update(void){
-
-  int success = setenv ("OPENBLAS_NUM_THREADS", "8", 1);
-  if (success){
-    printf("\nSetting OPENBLAS_NUM_THREADS to 8");
-    printf("\nSet the enviroment variable to your number of cores");
-  }
-
-
   gsl_matrix *weights = gsl_matrix_alloc(NCOMP, NCOMP);
   gsl_matrix *bias    = gsl_matrix_calloc(NCOMP,1);
   gsl_matrix *old_weights = gsl_matrix_alloc(NCOMP,NCOMP);
