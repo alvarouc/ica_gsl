@@ -13,6 +13,7 @@
 void rr_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
 void dc_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
 void si_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec ,size_t NCOMP);
+void xx_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP );
 
 void matrix_cross_corr(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B);
 void matrix_cross_corr_row(gsl_matrix *C, gsl_matrix *A, gsl_matrix *B);

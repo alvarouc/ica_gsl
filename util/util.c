@@ -63,6 +63,16 @@ void rr_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP ){
     abstol, &m, eval->data, evec->data, NCOMP, ifail);
 }
 
+void xx_eig(gsl_matrix *sym, gsl_vector *eval, gsl_matrix *evec, size_t NCOMP ){
+  // simple Eigen decomposition with embedded cut
+  size_t NSUB = sym->size1;
+  lapack_int m=0;
+  double abstol=-1.0, vl=0.0, vu=0.0;
+  lapack_int *ifail = (lapack_int *)LAPACKE_malloc( sizeof(lapack_int) * NSUB );
+  LAPACKE_dsyevx(LAPACK_ROW_MAJOR, 'V', 'I', 'U',
+    NSUB, sym->data, NSUB, vl, vu, NSUB-NCOMP+1, NSUB,
+    abstol, &m, eval->data, evec->data, NCOMP, ifail);
+}
 
 void ica_match_gt(gsl_matrix *true_a, gsl_matrix *true_s,
   gsl_matrix *esti_a, gsl_matrix *esti_s){
