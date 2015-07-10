@@ -27,7 +27,7 @@ double logit(double in){
 
 void pca_whiten(
   gsl_matrix *input,// NOBS x NVOX
-  size_t const NCOMP, // 
+  size_t const NCOMP, //
   gsl_matrix *x_white, // NCOMP x NVOX
   gsl_matrix *white, // NCOMP x NCOMP
   gsl_matrix *dewhite, //NOBS x NVOX
@@ -50,19 +50,11 @@ void pca_whiten(
 
   rr_eig(cov, eval, evec, NCOMP );
 
-  // Relative robust
-  // lapack_int m=0;
-  // double abstol=-1.0, vl=0.0, vu=0.0;
-  // lapack_int *ifail = (lapack_int *)LAPACKE_malloc( sizeof(lapack_int) * NSUB );
-  // LAPACKE_dsyevr(LAPACK_ROW_MAJOR, 'V', 'I', 'U',
-  //   NSUB, cov->data, NSUB, vl, vu, NSUB-NCOMP+1, NSUB,
-  //   abstol, &m, eval->data, evec->data, NCOMP, ifail);
-  // printf("\n-- Found %d components\n", m);
-
   //Computing whitening matrix
 
-  gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , NSUB, NCOMP);
-  gsl_matrix_transpose_memcpy(white, &temp.matrix);
+  // gsl_matrix_view temp = gsl_matrix_submatrix(evec, 0,0 , NSUB, NCOMP);
+  // gsl_matrix_transpose_memcpy(white, &temp.matrix);
+  gsl_matrix_transpose_memcpy(white, evec);
   gsl_vector_view v;
   double e;
   size_t i;
