@@ -1,9 +1,11 @@
 # CFLAGS=-L/opt/OpenBLAS/lib -I /opt/OpenBLAS/include
 # -lopenblas -llapack -lgsl -lcunit
+OPENBLAS_DIR=/home/aulloa/src/openblas-op
 CC=gcc
 LIBS_TEST=-lcunit
-INC = -I/home/aulloa/src/openblas-op/include
-LIBS_UTIL=-lgsl -lm -fopenmp -L/home/aulloa/src/openblas-op/lib -lopenblas -llapacke
+INC = -I$(OPENBLAS_DIR)/include
+LIBS_UTIL=-lgsl -lm -fopenmp \
+-L$(OPENBLAS_DIR)/lib -lopenblas 
 CFLAGS= -Wall -Ofast
 OBJ = util.o test.o ica.o
 
